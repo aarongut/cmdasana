@@ -1,4 +1,4 @@
-.swp
-.pyc
+*.swp
+*.pyc
 
 .config
