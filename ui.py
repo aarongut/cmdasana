@@ -1,5 +1,4 @@
 import urwid
-from event import Event
 
 # TaskEdit modes
 EDIT = 'edit'

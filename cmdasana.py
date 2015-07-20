@@ -12,17 +12,6 @@ class CmdAsana:
     def __init__(self):
         self.client = asana.Client.basic_auth(self.ASANA_API_KEY)
         self.me = self.client.users.me()
-        
-        f = open('.config', 'r')
-        config = f.read()
-        self.config = json.loads(config)
-        f.close()
-
-    def shouldShowWorkspace(self, workspace_id):
-        try:
-            return not (workspace_id in self.config['excluded_domains'])
-        except KeyError:
-            return True
 
     def myWorkspaces(self):
         return self.me['workspaces']
@@ -34,7 +23,6 @@ class CmdAsana:
             'workspace': workspace_id,
             'completed_since': 'now'
         })
-
 
     def completeTask(self, task_id):
         self.client.tasks.update(task_id, completed=True)
