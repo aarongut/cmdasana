@@ -1,3 +1,4 @@
+# -*- coding: latin-1 -*-
 import urwid
 
 # TaskEdit modes
@@ -47,12 +48,31 @@ class TaskList(urwid.ListBox):
         body = urwid.SimpleFocusListWalker([])
         for task_widget,_ in task_widgets.contents:
             urwid.connect_signal(task_widget, 'complete', self.completeTask)
+            urwid.connect_signal(task_widget, 'newtask', self.newTask)
+            urwid.connect_signal(task_widget, 'updatetask', self.updateTask)
             body.append(urwid.AttrMap(task_widget, None, focus_map='selected'))
 
         super(TaskList, self).__init__(body)
 
+    def insertNewTask(self, task):
+        task_widget = TaskEdit(task, mode=EDIT)
+        urwid.connect_signal(task_widget, 'complete', self.completeTask)
+        urwid.connect_signal(task_widget, 'newtask', self.newTask)
+        urwid.connect_signal(task_widget, 'updatetask', self.updateTask)
+        index = self.focus_position + 1
+        self.body.insert(index,
+                         urwid.AttrMap(task_widget, None, focus_map='selected'))
+        self.focus_position += 1
+
     def completeTask(self, task_id):
         urwid.emit_signal(self, 'complete', task_id)
+
+    def newTask(self):
+        urwid.emit_signal(self, 'newtask')
+
+    def updateTask(self, task_id, name):
+        urwid.emit_signal(self, 'updatetask', task_id, name)
+
 
     def keypress(self, size, key):
         # The ListBox will handle scrolling for us, so we trick it into thinking
@@ -70,11 +90,11 @@ class TaskList(urwid.ListBox):
             return key
 
 class TaskEdit(urwid.Edit):
-    mode = LIST
-    def __init__(self, task):
+    completed = False
+    def __init__(self, task, mode=LIST):
         self.task = task
+        self.mode = mode
         super(TaskEdit, self).__init__(task["name"])
-    
 
     def keypress(self, size, key):
         if self.mode == EDIT:
@@ -84,18 +104,25 @@ class TaskEdit(urwid.Edit):
                 self.mode = LIST
                 self.set_caption(self.edit_text)
                 self.set_edit_text('')
+                urwid.emit_signal(self, 'updatetask', self.task['id'],
+                                  self.caption)
                 if key != 'esc':
                     return key
-            else:
-                return key
         else:
             if key == 'i':
+                if self.completed:
+                    return
                 self.mode = EDIT
                 self.set_edit_text(self.caption)
                 self.set_caption('')
+            elif key == 'tab':
+                if not self.completed:
+                    urwid.emit_signal(self, 'complete', self.task['id'])
+                    self.set_caption(u'[done] ' + self.caption)
+                    self.completed = True
             elif key == 'enter':
-                urwid.emit_signal(self, 'complete', self.task['id'])
-            elif key in ('l', 'tab'):
+                urwid.emit_signal(self, 'newtask')
+            elif key == 'l':
                 pass
             else:
                 return key

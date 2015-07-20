@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: latin-1 -*-
 import os
 import json
 
@@ -16,7 +18,6 @@ class CmdAsana:
     def myWorkspaces(self):
         return self.me['workspaces']
 
-
     def allMyTasks(self, workspace_id):
         return self.client.tasks.find_all(params={
             'assignee': self.me['id'],
@@ -26,21 +27,27 @@ class CmdAsana:
 
     def completeTask(self, task_id):
         self.client.tasks.update(task_id, completed=True)
-        self.refreshTaskList()
 
-    def newTask(self): pass
-    
-    def deleteTask(self): pass
+    def newTask(self): 
+        task = self.client.tasks.create_in_workspace(self.workspace_id,
+                                                     assignee=self.me['id'])
+        task_list,_ = self.frame.contents[1]
+        task_list.insertNewTask(task)
+
+    def updateTask(self, task_id, name):
+        self.client.tasks.update(task_id, name=name)
 
     def showDetails(self, task_id): pass
 
     def replaceBody(self, widget):
-        self.frame.contents.pop()
+        old_widget,_ = self.frame.contents.pop()
+        if old_widget != None:
+            self.clearSignals(old_widget)
         self.frame.contents.append((widget, self.frame.options()))
 
     def showWorkspace(self, workspace_id):
         task_list = ui.TaskList(self.allMyTasks(workspace_id))
-        urwid.connect_signal(task_list, 'complete', self.completeTask)
+        self.connectTaskListSignals(task_list)
         self.replaceBody(task_list)
         self.workspace_id = workspace_id
 
@@ -48,15 +55,32 @@ class CmdAsana:
         self.showWorkspace(self.workspace_id)
 
     def registerSignals(self):
-        urwid.register_signal(ui.TaskList, 'complete')
-        urwid.register_signal(ui.TaskEdit, 'complete')
+        urwid.register_signal(ui.TaskList,
+                              ['complete',
+                               'newtask',
+                               'updatetask'])
+        urwid.register_signal(ui.TaskEdit,
+                              ['complete',
+                               'newtask',
+                               'updatetask'])
         urwid.register_signal(ui.WorkspaceMenu, 'click')
-         
+
+    def clearSignals(self, widget):
+        urwid.disconnect_signal(widget, 'complete', self.completeTask)
+        urwid.disconnect_signal(widget, 'newtask', self.newTask)
+        urwid.disconnect_signal(widget, 'updatetask', self.updateTask)
+
+    def connectTaskListSignals(self, task_list):
+        urwid.connect_signal(task_list, 'complete', self.completeTask)
+        urwid.connect_signal(task_list, 'newtask', self.newTask)
+        urwid.connect_signal(task_list, 'updatetask', self.updateTask)
+
     def handleInput(self, key):
         if key in ('q', 'Q'):
             raise urwid.ExitMainLoop()
 
     def render(self):
+        urwid.set_encoding("UTF-8")
         self.registerSignals()
 
         workspace_menu = ui.WorkspaceMenu(self.myWorkspaces())
