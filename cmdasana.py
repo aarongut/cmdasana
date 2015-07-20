@@ -39,15 +39,30 @@ class CmdAsana:
             task_list += tasks
         return task_list
 
+    def completeTask(self, task_id):
+        self.client.tasks.update(task_id, completed=True)
+
+    def newTask(self): pass
+    def deleteTask(self): pass
+
 def handleInput(key):
     if key in ('q', 'Q'):
         raise urwid.ExitMainLoop()
 
+def showDetails(task_id): pass
+
+def registerSignals():
+    urwid.register_signal(ui.TaskList, 'complete')
+    urwid.register_signal(ui.TaskEdit, 'complete')
+
 def main():
     cmdasana = CmdAsana()
-    task_list = cmdasana.allMyTasks()
-    
-    loop = urwid.MainLoop(ui.TaskList(task_list), unhandled_input=handleInput)
+    registerSignals()
+
+    task_list = ui.TaskList(cmdasana.allMyTasks())
+    urwid.connect_signal(task_list, 'complete', cmdasana.completeTask)
+
+    loop = urwid.MainLoop(task_list, unhandled_input=handleInput)
     loop.run()
 
 

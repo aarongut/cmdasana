@@ -1,4 +1,5 @@
 import urwid
+from event import Event
 
 # TaskEdit modes
 EDIT = 'edit'
@@ -7,12 +8,20 @@ LIST = 'list'
 class TaskList(urwid.ListBox):
     def __init__(self, tasks):
         self.tasks = tasks
+        
         task_widgets = urwid.Pile(
             [TaskEdit(task) for task in tasks]
         )
 
+        for task_widget,_ in task_widgets.contents:
+            urwid.connect_signal(task_widget, 'complete', self.completeTask)
+
         body = urwid.SimpleFocusListWalker([task_widgets])
         super(TaskList, self).__init__(body)
+
+    def completeTask(self, task_id):
+        del self.focus.contents[self.focus.focus_position]
+        urwid.emit_signal(self, 'complete', task_id)
 
     def keypress(self, size, key):
         # The ListBox will handle scrolling for us, so we trick it into thinking
@@ -32,7 +41,9 @@ class TaskList(urwid.ListBox):
 class TaskEdit(urwid.Edit):
     mode = LIST
     def __init__(self, task):
+        self.task = task
         super(TaskEdit, self).__init__(task["name"])
+    
 
     def keypress(self, size, key):
         if self.mode == EDIT:
@@ -50,8 +61,8 @@ class TaskEdit(urwid.Edit):
                 self.set_edit_text(self.caption)
                 self.set_caption('')
             elif key == 'enter':
-                self.set_caption(self.caption + ' [done]')
+                urwid.emit_signal(self, 'complete', self.task['id'])
             elif key in ('l', 'tab'):
-                self.set_caption(self.caption + ' [details]')
+                pass
             else:
                 return key
