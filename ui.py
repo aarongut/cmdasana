@@ -6,7 +6,7 @@ LIST = 'list'
 
 palette = [
     ('selected', 'standout', ''),
-    ('selected workspace', 'white', 'dark red'),
+    ('selected workspace', 'standout,bold', ''),
 ]
 
 class WorkspaceMenu(urwid.Columns):
