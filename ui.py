@@ -7,7 +7,27 @@ LIST = 'list'
 
 palette = [
     ('selected', 'standout', ''),
+    ('selected workspace', 'white', 'dark red'),
 ]
+
+class WorkspaceMenu(urwid.Columns):
+    def __init__(self, workspaces):
+        super(WorkspaceMenu, self).__init__([], dividechars=1)
+
+        for workspace in workspaces:
+            button = WorkspaceButton(workspace, self.loadWorkspace)
+            self.contents.append((urwid.AttrMap(button,
+                                               None,
+                                               focus_map='selected workspace'),
+                                 self.options('given', 24)))
+
+    def loadWorkspace(self, widget, workspace_id):
+        urwid.emit_signal(self, 'click', workspace_id)
+
+class WorkspaceButton(urwid.Button):
+    def __init__(self, workspace, onClick):
+        super(WorkspaceButton, self).__init__(workspace['name'])
+        urwid.connect_signal(self, 'click', onClick, workspace['id'])
 
 class TaskList(urwid.ListBox):
     def __init__(self, tasks):
