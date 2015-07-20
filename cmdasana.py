@@ -1,6 +1,10 @@
 import os
-import asana
 import json
+
+import urwid
+import asana
+
+import ui
 
 class CmdAsana:
     ASANA_API_KEY = os.environ['ASANA_API_KEY']
@@ -21,13 +25,10 @@ class CmdAsana:
             return True
 
     def allMyTasks(self):
+        task_list = []
         for workspace in self.me['workspaces']:
             if not self.shouldShowWorkspace(workspace['id']):
                 continue
-
-            print "*" * 80
-            print workspace['id'], ': ', workspace['name'], " Tasks"
-            print "*" * 80, "\n"
 
             tasks = self.client.tasks.find_all(params={
                 'assignee': self.me['id'],
@@ -35,12 +36,19 @@ class CmdAsana:
                 'completed_since': 'now'
             })
 
-            for task in tasks:
-                print task['name']
+            task_list += tasks
+        return task_list
+
+def handleInput(key):
+    if key in ('q', 'Q'):
+        raise urwid.ExitMainLoop()
 
 def main():
     cmdasana = CmdAsana()
+    task_list = cmdasana.allMyTasks()
+    
+    loop = urwid.MainLoop(ui.TaskList(task_list), unhandled_input=handleInput)
+    loop.run()
 
-    cmdasana.allMyTasks()
 
 if __name__ == "__main__": main()
