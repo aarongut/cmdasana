@@ -55,6 +55,7 @@ def registerSignals():
     urwid.register_signal(ui.TaskList, 'complete')
     urwid.register_signal(ui.TaskEdit, 'complete')
 
+
 def main():
     cmdasana = CmdAsana()
     registerSignals()
@@ -62,7 +63,10 @@ def main():
     task_list = ui.TaskList(cmdasana.allMyTasks())
     urwid.connect_signal(task_list, 'complete', cmdasana.completeTask)
 
-    loop = urwid.MainLoop(task_list, unhandled_input=handleInput)
+    loop = urwid.MainLoop(task_list,
+                          unhandled_input=handleInput,
+                          palette=ui.palette
+                         )
     loop.run()
 
 

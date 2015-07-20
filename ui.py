@@ -5,6 +5,10 @@ from event import Event
 EDIT = 'edit'
 LIST = 'list'
 
+palette = [
+    ('selected', 'standout', ''),
+]
+
 class TaskList(urwid.ListBox):
     def __init__(self, tasks):
         self.tasks = tasks
@@ -13,10 +17,11 @@ class TaskList(urwid.ListBox):
             [TaskEdit(task) for task in tasks]
         )
 
+        body = urwid.SimpleFocusListWalker([])
         for task_widget,_ in task_widgets.contents:
             urwid.connect_signal(task_widget, 'complete', self.completeTask)
+            body.append(urwid.AttrMap(task_widget, None, focus_map='selected'))
 
-        body = urwid.SimpleFocusListWalker([task_widgets])
         super(TaskList, self).__init__(body)
 
     def completeTask(self, task_id):
@@ -49,10 +54,12 @@ class TaskEdit(urwid.Edit):
         if self.mode == EDIT:
             key = super(TaskEdit, self).keypress(size, key)
 
-            if key == 'esc':
+            if key in ('esc', 'up', 'down'):
                 self.mode = LIST
                 self.set_caption(self.edit_text)
                 self.set_edit_text('')
+                if key != 'esc':
+                    return key
             else:
                 return key
         else:
