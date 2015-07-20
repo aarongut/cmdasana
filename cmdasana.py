@@ -38,6 +38,7 @@ class CmdAsana:
 
     def completeTask(self, task_id):
         self.client.tasks.update(task_id, completed=True)
+        self.refreshTaskList()
 
     def newTask(self): pass
     
@@ -53,6 +54,10 @@ class CmdAsana:
         task_list = ui.TaskList(self.allMyTasks(workspace_id))
         urwid.connect_signal(task_list, 'complete', self.completeTask)
         self.replaceBody(task_list)
+        self.workspace_id = workspace_id
+
+    def refreshTaskList(self):
+        self.showWorkspace(self.workspace_id)
 
     def registerSignals(self):
         urwid.register_signal(ui.TaskList, 'complete')

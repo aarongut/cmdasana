@@ -53,7 +53,6 @@ class TaskList(urwid.ListBox):
         super(TaskList, self).__init__(body)
 
     def completeTask(self, task_id):
-        del self.focus.contents[self.focus.focus_position]
         urwid.emit_signal(self, 'complete', task_id)
 
     def keypress(self, size, key):
