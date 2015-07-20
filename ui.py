@@ -20,6 +20,14 @@ class WorkspaceMenu(urwid.Columns):
                                                None,
                                                focus_map='selected workspace'),
                                  self.options('given', 24)))
+    def keypress(self, size, key):
+        if key == 'j':
+            key = 'down'
+        elif key == 'h':
+            key = 'left'
+        elif key == 'l':
+            key = 'right'
+        return super(WorkspaceMenu, self).keypress(size, key)
 
     def loadWorkspace(self, widget, workspace_id):
         urwid.emit_signal(self, 'click', workspace_id)
