@@ -152,11 +152,18 @@ class TaskDetails(urwid.Pile):
         comment_edit = CommentEdit(task)
         urwid.connect_signal(comment_edit, 'comment', self.comment)
 
+        if task['assignee']:
+            assignee = urwid.Text('Assigned to: ' + task['assignee']['name'])
+        else:
+            assignee = urwid.Text('(not assigned)')
+
+
         body = [('pack', urwid.Text(project['name']))
                                 for project in task['projects']] + \
             [
                 ('pack', urwid.Divider('=')),
                 ('pack', urwid.Text(('header', task['name']))),
+                ('pack', assignee),
                 ('pack', urwid.Divider('-')),
                 ('pack', urwid.Text(task['notes'])),
             ] + \
