@@ -8,7 +8,10 @@ LIST = 'list'
 palette = [
     ('selected', 'standout', ''),
     ('selected workspace', 'standout,bold', ''),
-    ('header', 'bold', ''),
+    ('header divider', '', 'dark blue'),
+    ('header', 'bold,dark cyan', ''),
+    ('task', 'dark cyan', 'black'),
+    ('workspace', 'yellow', '')
 ]
 
 class WorkspaceMenu(urwid.Columns):
@@ -18,7 +21,7 @@ class WorkspaceMenu(urwid.Columns):
         for workspace in workspaces:
             button = WorkspaceButton(workspace, self.loadWorkspace)
             self.contents.append((urwid.AttrMap(button,
-                                               None,
+                                               'workspace',
                                                focus_map='selected workspace'),
                                  self.options('given', 24)))
     def keypress(self, size, key):
@@ -49,7 +52,7 @@ class TaskList(urwid.ListBox):
         body = urwid.SimpleFocusListWalker([])
         for task_widget,_ in task_widgets.contents:
             self.connectSignals(task_widget)
-            body.append(urwid.AttrMap(task_widget, None, focus_map='selected'))
+            body.append(urwid.AttrMap(task_widget, 'task', focus_map='selected'))
 
         super(TaskList, self).__init__(body)
 

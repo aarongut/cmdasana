@@ -1,18 +1,45 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 import os
+import sys
 import json
 
 import urwid
 import asana
 
 import ui
+from secrets import CLIENT_ID, CLIENT_SECRET
 
 class CmdAsana:
-    ASANA_API_KEY = os.environ['ASANA_API_KEY']
-
     def __init__(self):
-        self.client = asana.Client.basic_auth(self.ASANA_API_KEY)
+        try:
+            f = open(".oauth", "r")
+            token = json.loads(f.readline())
+            f.close()
+            self.client = asana.Client.oauth(
+                client_id=CLIENT_ID,
+                token=token
+            )
+        except IOError:
+            self.client = asana.Client.oauth(
+                client_id=CLIENT_ID,
+                client_secret=CLIENT_SECRET,
+                redirect_uri='urn:ietf:wg:oauth:2.0:oob'
+            )
+            (url, state) = self.client.session.authorization_url()
+            try:
+                import webbrowser
+                webbrowser.open(url)
+            except Exception:
+                print "Go to the following link and enter the code:"
+                print url
+
+            code = sys.stdin.readline().strip()
+            token = self.client.session.fetch_token(code=code)
+            f = open('.oauth', 'w')
+            f.write(json.dumps(token))
+            f.close()
+
         self.me = self.client.users.me()
 
     def myWorkspaces(self):
@@ -105,7 +132,10 @@ class CmdAsana:
         workspace_menu = ui.WorkspaceMenu(self.myWorkspaces())
         urwid.connect_signal(workspace_menu, 'click', self.showWorkspace)
 
-        self.frame = urwid.Pile([('pack', workspace_menu), None])
+        self.frame = urwid.Pile([
+            ('pack', workspace_menu),
+            ('pack', urwid.AttrMap(urwid.Divider(), 'header divider')),
+            None])
         self.showWorkspace(self.myWorkspaces()[0]['id'])
 
         loop = urwid.MainLoop(self.frame,
