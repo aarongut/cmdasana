@@ -8,10 +8,9 @@ LIST = 'list'
 palette = [
     ('selected', 'standout', ''),
     ('selected workspace', 'standout,bold', ''),
-    ('header divider', '', 'dark blue'),
-    ('header', 'bold,dark cyan', ''),
-    ('task', 'dark cyan', 'black'),
-    ('workspace', 'yellow', '')
+    ('header', 'bold,light green', ''),
+    ('task', 'light green', ''),
+    ('workspace', 'white', 'dark blue')
 ]
 
 class WorkspaceMenu(urwid.Columns):
@@ -21,7 +20,7 @@ class WorkspaceMenu(urwid.Columns):
         for workspace in workspaces:
             button = WorkspaceButton(workspace, self.loadWorkspace)
             self.contents.append((urwid.AttrMap(button,
-                                               'workspace',
+                                               None,
                                                focus_map='selected workspace'),
                                  self.options('given', 24)))
     def keypress(self, size, key):

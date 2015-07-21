@@ -73,6 +73,7 @@ class CmdAsana:
         if old_widget != None:
             self.clearSignals(old_widget)
         self.frame.contents.append((widget, self.frame.options()))
+        self.frame.focus_position = 0
 
     def showWorkspace(self, workspace_id):
         task_list = ui.TaskList(self.allMyTasks(workspace_id))
@@ -133,9 +134,9 @@ class CmdAsana:
         urwid.connect_signal(workspace_menu, 'click', self.showWorkspace)
 
         self.frame = urwid.Pile([
-            ('pack', workspace_menu),
-            ('pack', urwid.AttrMap(urwid.Divider(), 'header divider')),
-            None])
+            ('pack', urwid.AttrMap(workspace_menu, 'workspace')),
+            None
+        ])
         self.showWorkspace(self.myWorkspaces()[0]['id'])
 
         loop = urwid.MainLoop(self.frame,
