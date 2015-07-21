@@ -66,6 +66,7 @@ class TaskList(urwid.ListBox):
 
     def completeTask(self, task_id):
         urwid.emit_signal(self, 'complete', task_id)
+        del self.body[self.focus_position]
 
     def newTask(self):
         urwid.emit_signal(self, 'newtask')
@@ -77,10 +78,11 @@ class TaskList(urwid.ListBox):
     def keypress(self, size, key):
         # The ListBox will handle scrolling for us, so we trick it into thinking
         # it's being passed arrow keys
-        if key == 'j':
-            key = 'down'
-        elif key == 'k':
-            key = 'up'
+        if self.focus.original_widget.mode == LIST:
+            if key == 'j':
+                key = 'down'
+            elif key == 'k':
+                key = 'up'
 
         key = super(TaskList, self).keypress(size, key)
 
@@ -116,10 +118,7 @@ class TaskEdit(urwid.Edit):
                 self.set_edit_text(self.caption)
                 self.set_caption('')
             elif key == 'tab':
-                if not self.completed:
-                    urwid.emit_signal(self, 'complete', self.task['id'])
-                    self.set_caption(u'[done] ' + self.caption)
-                    self.completed = True
+                urwid.emit_signal(self, 'complete', self.task['id'])
             elif key == 'enter':
                 urwid.emit_signal(self, 'newtask')
             elif key == 'l':
