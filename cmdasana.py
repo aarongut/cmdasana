@@ -6,6 +6,7 @@ import json
 
 import urwid
 import asana
+from oauthlib.oauth2.rfc6749.errors import TokenExpiredError
 
 import ui
 from secrets import CLIENT_ID, CLIENT_SECRET
@@ -21,26 +22,36 @@ class CmdAsana:
                 token=token
             )
         except IOError:
-            self.client = asana.Client.oauth(
-                client_id=CLIENT_ID,
-                client_secret=CLIENT_SECRET,
-                redirect_uri='urn:ietf:wg:oauth:2.0:oob'
-            )
-            (url, state) = self.client.session.authorization_url()
-            try:
-                import webbrowser
-                webbrowser.open(url)
-            except Exception:
-                print "Go to the following link and enter the code:"
-                print url
+            self.getToken()
 
-            code = sys.stdin.readline().strip()
-            token = self.client.session.fetch_token(code=code)
+        try:
+            self.me = self.client.users.me()
+        except TokenExpiredError:
+            token = self.client.session.fetch_token(code=token['refresh_token'])
             f = open('.oauth', 'w')
             f.write(json.dumps(token))
             f.close()
+            self.me = self.client.users.me()
 
-        self.me = self.client.users.me()
+    def getToken(self):
+        self.client = asana.Client.oauth(
+            client_id=CLIENT_ID,
+            client_secret=CLIENT_SECRET,
+            redirect_uri='urn:ietf:wg:oauth:2.0:oob'
+        )
+        (url, state) = self.client.session.authorization_url()
+        try:
+            import webbrowser
+            webbrowser.open(url)
+        except Exception:
+            print "Go to the following link and enter the code:"
+            print url
+
+        code = sys.stdin.readline().strip()
+        token = self.client.session.fetch_token(code=code)
+        f = open('.oauth', 'w')
+        f.write(json.dumps(token))
+        f.close()
 
     def myWorkspaces(self):
         return self.me['workspaces']
