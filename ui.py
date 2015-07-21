@@ -8,6 +8,7 @@ LIST = 'list'
 palette = [
     ('selected', 'standout', ''),
     ('selected workspace', 'standout,bold', ''),
+    ('header', 'bold', ''),
 ]
 
 class WorkspaceMenu(urwid.Columns):
@@ -47,22 +48,24 @@ class TaskList(urwid.ListBox):
 
         body = urwid.SimpleFocusListWalker([])
         for task_widget,_ in task_widgets.contents:
-            urwid.connect_signal(task_widget, 'complete', self.completeTask)
-            urwid.connect_signal(task_widget, 'newtask', self.newTask)
-            urwid.connect_signal(task_widget, 'updatetask', self.updateTask)
+            self.connectSignals(task_widget)
             body.append(urwid.AttrMap(task_widget, None, focus_map='selected'))
 
         super(TaskList, self).__init__(body)
 
     def insertNewTask(self, task):
         task_widget = TaskEdit(task, mode=EDIT)
-        urwid.connect_signal(task_widget, 'complete', self.completeTask)
-        urwid.connect_signal(task_widget, 'newtask', self.newTask)
-        urwid.connect_signal(task_widget, 'updatetask', self.updateTask)
+        self.connectSignals(task_widget)
         index = self.focus_position + 1
         self.body.insert(index,
                          urwid.AttrMap(task_widget, None, focus_map='selected'))
         self.focus_position += 1
+
+    def connectSignals(self, task_widget):
+        urwid.connect_signal(task_widget, 'complete', self.completeTask)
+        urwid.connect_signal(task_widget, 'newtask', self.newTask)
+        urwid.connect_signal(task_widget, 'updatetask', self.updateTask)
+        urwid.connect_signal(task_widget, 'details', self.details)
 
     def completeTask(self, task_id):
         urwid.emit_signal(self, 'complete', task_id)
@@ -73,7 +76,9 @@ class TaskList(urwid.ListBox):
 
     def updateTask(self, task_id, name):
         urwid.emit_signal(self, 'updatetask', task_id, name)
-
+    
+    def details(self, task_id):
+        urwid.emit_signal(self, 'details', task_id)
 
     def keypress(self, size, key):
         # The ListBox will handle scrolling for us, so we trick it into thinking
@@ -122,6 +127,43 @@ class TaskEdit(urwid.Edit):
             elif key == 'enter':
                 urwid.emit_signal(self, 'newtask')
             elif key == 'l':
-                pass
+                urwid.emit_signal(self, 'details', self.task['id'])
             else:
                 return key
+
+class CommentEdit(urwid.Edit):
+    def __init__(self, task):
+        self.task = task
+        super(CommentEdit, self).__init__('Add a comment:\n')
+
+    def keypress(self, size, key):
+        if key != 'enter':
+            return super(CommentEdit, self).keypress(size, key)
+        urwid.emit_signal(self, 'comment', self.task['id'], self.edit_text)
+
+class TaskDetails(urwid.Pile):
+    def __init__(self, task, stories):
+        self.task = task
+        self.stories = stories
+
+        comment_edit = CommentEdit(task)
+        urwid.connect_signal(comment_edit, 'comment', self.comment)
+
+        body = [('pack', urwid.Text(project['name']))
+                                for project in task['projects']] + \
+            [
+                ('pack', urwid.Divider('=')),
+                ('pack', urwid.Text(('header', task['name']))),
+                ('pack', urwid.Divider('-')),
+                ('pack', urwid.Text(task['notes'])),
+            ] + \
+            [('pack', urwid.Text('[' + story['created_by']['name'] + '] ' + \
+                        story['text'])) for story in stories] + \
+            [
+                ('weight', 1, urwid.Filler(comment_edit, 'bottom'))
+            ]
+
+        super(TaskDetails, self).__init__(body)
+
+    def comment(self, task_id, comment):
+        urwid.emit_signal(self, 'comment', task_id, comment)

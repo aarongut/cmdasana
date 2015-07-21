@@ -36,8 +36,10 @@ class CmdAsana:
 
     def updateTask(self, task_id, name):
         self.client.tasks.update(task_id, name=name)
-
-    def showDetails(self, task_id): pass
+    
+    def addComment(self, task_id, comment):
+        self.client.stories.create_on_task(task_id, {"text": comment})
+        self.loadDetails(task_id)
 
     def replaceBody(self, widget):
         old_widget,_ = self.frame.contents.pop()
@@ -51,29 +53,46 @@ class CmdAsana:
         self.replaceBody(task_list)
         self.workspace_id = workspace_id
 
+    def loadDetails(self, task_id):
+        task = self.client.tasks.find_by_id(task_id)
+        stories = self.client.stories.find_by_task(task_id)
+        task_details = ui.TaskDetails(task, stories)
+        urwid.connect_signal(task_details, 'comment', self.addComment)
+        self.replaceBody(task_details)
+
     def refreshTaskList(self):
         self.showWorkspace(self.workspace_id)
 
     def registerSignals(self):
-        urwid.register_signal(ui.TaskList,
-                              ['complete',
-                               'newtask',
-                               'updatetask'])
-        urwid.register_signal(ui.TaskEdit,
-                              ['complete',
-                               'newtask',
-                               'updatetask'])
+        urwid.register_signal(ui.TaskList, [
+            'complete',
+            'newtask',
+            'updatetask',
+            'details'
+        ])
+        urwid.register_signal(ui.TaskEdit, [
+            'complete',
+            'newtask',
+            'updatetask',
+            'details'
+        ])
+
+        urwid.register_signal(ui.TaskDetails, ['comment'])
+        urwid.register_signal(ui.CommentEdit, ['comment'])
+
         urwid.register_signal(ui.WorkspaceMenu, 'click')
 
     def clearSignals(self, widget):
         urwid.disconnect_signal(widget, 'complete', self.completeTask)
         urwid.disconnect_signal(widget, 'newtask', self.newTask)
         urwid.disconnect_signal(widget, 'updatetask', self.updateTask)
+        urwid.disconnect_signal(widget, 'details', self.loadDetails)
 
     def connectTaskListSignals(self, task_list):
         urwid.connect_signal(task_list, 'complete', self.completeTask)
         urwid.connect_signal(task_list, 'newtask', self.newTask)
         urwid.connect_signal(task_list, 'updatetask', self.updateTask)
+        urwid.connect_signal(task_list, 'details', self.loadDetails)
 
     def handleInput(self, key):
         if key in ('q', 'Q'):
