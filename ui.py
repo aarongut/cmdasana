@@ -128,7 +128,7 @@ class TaskEdit(urwid.Edit):
                 urwid.emit_signal(self, 'complete', self.task['id'])
             elif key == 'enter':
                 urwid.emit_signal(self, 'newtask')
-            elif key == 'l':
+            elif key in ('l', 'right'):
                 urwid.emit_signal(self, 'details', self.task['id'])
             else:
                 return key
