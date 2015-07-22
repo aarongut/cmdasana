@@ -97,9 +97,9 @@ class TaskList(urwid.ListBox):
         task_widget = TaskEdit(task, mode=EDIT)
         self.connectSignals(task_widget)
         index = self.focus_position + 1
-        style = 'section' if task['name'][-1] == ':' else 'task'
         self.body.insert(index,
-                         urwid.AttrMap(task_widget, style, focus_map='selected'))
+                         urwid.AttrMap(task_widget, 'task',
+                                       focus_map='selected'))
         self.focus_position += 1
 
     def connectSignals(self, task_widget):

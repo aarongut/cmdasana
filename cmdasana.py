@@ -74,9 +74,11 @@ class CmdAsana:
             self.state = json.loads(f.readline())
             f.close()
         except IOError:
+            workspace_id = self.myWorkspaces()[0]['id']
             self.state = {
                 'view': 'workspace',
-                'id': self.myWorkspaces()[0]['id']
+                'id': workspace_id,
+                'workspace_id': workspace_id
             }
 
     def myWorkspaces(self):
@@ -102,8 +104,17 @@ class CmdAsana:
         self.client.tasks.update(task_id, completed=True)
 
     def newTask(self): 
-        task = self.client.tasks.create_in_workspace(self.workspace_id,
-                                                     assignee=self.me['id'])
+        if self.state['view'] == 'project':
+            task = self.client.tasks.create_in_workspace(
+                self.state['workspace_id'],
+                projects=[self.state['id']]
+            )
+        else:
+            task = self.client.tasks.create_in_workspace(
+                self.state['workspace_id'],
+                assignee=self.me['id']
+            )
+
         task_list,_ = self.frame.contents[1]
         task_list.insertNewTask(task)
 
@@ -124,11 +135,11 @@ class CmdAsana:
     def showMyTasks(self, workspace_id):
         self.state['view'] = 'atm'
         self.state['id'] = workspace_id
+        self.state['workspace_id'] = workspace_id
 
         task_list = ui.TaskList(self.allMyTasks(workspace_id))
         self.connectTaskListSignals(task_list)
         self.replaceBody(task_list)
-        self.workspace_id = workspace_id
 
     def showProject(self, project_id):
         self.state['view'] = 'project'
@@ -141,6 +152,7 @@ class CmdAsana:
     def showProjectList(self, workspace_id):
         self.state['view'] = 'workspace'
         self.state['id'] = workspace_id
+        self.state['workspace_id'] = workspace_id
 
         self.workspace_id = workspace_id
         project_list = ui.ProjectList(self.allMyProjects())
@@ -157,9 +169,6 @@ class CmdAsana:
         urwid.connect_signal(task_details, 'comment', self.addComment)
         urwid.connect_signal(task_details, 'loadproject', self.showProject)
         self.replaceBody(task_details)
-
-    def refreshTaskList(self):
-        self.showWorkspace(self.workspace_id)
 
     def registerSignals(self):
         urwid.register_signal(ui.TaskList, [
