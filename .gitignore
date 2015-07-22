@@ -1,6 +1,8 @@
 *.swp
 *.pyc
 
+.state
 .oauth
 secrets.py
+
 urwid-src

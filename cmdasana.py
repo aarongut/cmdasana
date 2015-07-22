@@ -63,6 +63,22 @@ class CmdAsana:
         token = self.client.session.fetch_token(code=code)
         self.saveToken(token)
 
+    def saveState(self):
+        f = open('.state', 'w')
+        f.write(json.dumps(self.state))
+        f.close()
+
+    def loadState(self):
+        try:
+            f = open('.state', 'r')
+            self.state = json.loads(f.readline())
+            f.close()
+        except IOError:
+            self.state = {
+                'view': 'workspace',
+                'id': self.myWorkspaces()[0]['id']
+            }
+
     def myWorkspaces(self):
         return self.me['workspaces']
 
@@ -106,23 +122,35 @@ class CmdAsana:
         self.frame.focus_position = 0
 
     def showMyTasks(self, workspace_id):
+        self.state['view'] = 'atm'
+        self.state['id'] = workspace_id
+
         task_list = ui.TaskList(self.allMyTasks(workspace_id))
         self.connectTaskListSignals(task_list)
         self.replaceBody(task_list)
         self.workspace_id = workspace_id
 
     def showProject(self, project_id):
+        self.state['view'] = 'project'
+        self.state['id'] = project_id
+
         task_list = ui.TaskList(self.projectTasks(project_id))
         self.connectTaskListSignals(task_list)
         self.replaceBody(task_list)
 
     def showProjectList(self, workspace_id):
+        self.state['view'] = 'workspace'
+        self.state['id'] = workspace_id
+
         self.workspace_id = workspace_id
         project_list = ui.ProjectList(self.allMyProjects())
         urwid.connect_signal(project_list, 'loadproject', self.showProject)
         self.replaceBody(project_list)
 
-    def loadDetails(self, task_id):
+    def showDetails(self, task_id):
+        self.state['view'] = 'details'
+        self.state['id'] = task_id
+
         task = self.client.tasks.find_by_id(task_id)
         stories = self.client.stories.find_by_task(task_id)
         task_details = ui.TaskDetails(task, stories)
@@ -157,13 +185,13 @@ class CmdAsana:
         urwid.disconnect_signal(widget, 'complete', self.completeTask)
         urwid.disconnect_signal(widget, 'newtask', self.newTask)
         urwid.disconnect_signal(widget, 'updatetask', self.updateTask)
-        urwid.disconnect_signal(widget, 'details', self.loadDetails)
+        urwid.disconnect_signal(widget, 'details', self.showDetails)
 
     def connectTaskListSignals(self, task_list):
         urwid.connect_signal(task_list, 'complete', self.completeTask)
         urwid.connect_signal(task_list, 'newtask', self.newTask)
         urwid.connect_signal(task_list, 'updatetask', self.updateTask)
-        urwid.connect_signal(task_list, 'details', self.loadDetails)
+        urwid.connect_signal(task_list, 'details', self.showDetails)
 
     def handleInput(self, key):
         if key in ('q', 'Q'):
@@ -180,8 +208,16 @@ class CmdAsana:
             ('pack', urwid.AttrMap(workspace_menu, 'workspace')),
             None
         ])
-        #self.showWorkspace(self.myWorkspaces()[0]['id'])
-        self.showProjectList(self.myWorkspaces()[0]['id'])
+        if self.state['view'] == 'workspace':
+            self.showProjectList(self.state['id'])
+        elif self.state['view'] == 'project':
+            self.showProject(self.state['id'])
+        elif self.state['view'] == 'atm':
+            self.showMyTasks(self.state['id'])
+        elif self.state['view'] == 'details':
+            self.showDetails(self.state['id'])
+        else:
+            raise KeyError
 
         loop = urwid.MainLoop(self.frame,
                               unhandled_input=self.handleInput,
@@ -191,6 +227,8 @@ class CmdAsana:
 
 def main():
     cmdasana = CmdAsana()
+    cmdasana.loadState()
     cmdasana.render()
+    cmdasana.saveState()
 
 if __name__ == "__main__": main()
