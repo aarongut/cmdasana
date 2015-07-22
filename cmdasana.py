@@ -112,7 +112,7 @@ class CmdAsana:
     
     def addComment(self, task_id, comment):
         self.client.stories.create_on_task(task_id, {"text": comment})
-        self.loadDetails(task_id)
+        self.showDetails(task_id)
 
     def replaceBody(self, widget):
         old_widget,_ = self.frame.contents.pop()
@@ -155,6 +155,7 @@ class CmdAsana:
         stories = self.client.stories.find_by_task(task_id)
         task_details = ui.TaskDetails(task, stories)
         urwid.connect_signal(task_details, 'comment', self.addComment)
+        urwid.connect_signal(task_details, 'loadproject', self.showProject)
         self.replaceBody(task_details)
 
     def refreshTaskList(self):
@@ -174,7 +175,7 @@ class CmdAsana:
             'details'
         ])
 
-        urwid.register_signal(ui.TaskDetails, ['comment'])
+        urwid.register_signal(ui.TaskDetails, ['comment', 'loadproject'])
         urwid.register_signal(ui.CommentEdit, ['comment'])
 
         urwid.register_signal(ui.WorkspaceMenu, 'click')

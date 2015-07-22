@@ -190,14 +190,16 @@ class TaskDetails(urwid.Pile):
         comment_edit = CommentEdit(task)
         urwid.connect_signal(comment_edit, 'comment', self.comment)
 
+        projects = [('pack', ProjectIcon(project, self.loadProject))
+                    for project in task['projects']]
+
         if task['assignee']:
             assignee = urwid.Text('Assigned to: ' + task['assignee']['name'])
         else:
             assignee = urwid.Text('(not assigned)')
 
 
-        body = [('pack', urwid.Text(project['name']))
-                                for project in task['projects']] + \
+        body = projects + \
             [
                 ('pack', urwid.Divider('=')),
                 ('pack', urwid.Text(('header', task['name']))),
@@ -215,3 +217,6 @@ class TaskDetails(urwid.Pile):
 
     def comment(self, task_id, comment):
         urwid.emit_signal(self, 'comment', task_id, comment)
+
+    def loadProject(self, project_id):
+        urwid.emit_signal(self, 'loadproject', project_id)
