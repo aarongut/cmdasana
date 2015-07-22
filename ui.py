@@ -1,5 +1,6 @@
 # -*- coding: latin-1 -*-
 import urwid
+import sys
 
 # TaskEdit modes
 EDIT = 'edit'
@@ -40,6 +41,41 @@ class WorkspaceButton(urwid.Button):
     def __init__(self, workspace, onClick):
         super(WorkspaceButton, self).__init__(workspace['name'])
         urwid.connect_signal(self, 'click', onClick, workspace['id'])
+
+class ProjectIcon(urwid.SelectableIcon):
+    def __init__(self, project, onClick):
+        self.project = project
+        self.onClick = onClick
+        super(ProjectIcon, self).__init__(project['name'])
+
+    def keypress(self, size, key):
+        if key in ('enter', 'left', 'l'):
+            self.onClick(self.project['id'])
+        else:
+            return super(ProjectIcon, self).keypress(size, key)
+
+class ProjectList(urwid.ListBox):
+    def __init__(self, projects):
+        self.projects = projects
+
+        project_widgets = [ProjectIcon(project, self.loadProject) 
+                           for project in projects]
+
+        body = urwid.SimpleFocusListWalker(project_widgets)
+
+        super(ProjectList, self).__init__(body)
+
+    def keypress(self, size, key):
+        if key == 'j':
+            key = 'down'
+        elif key == 'k':
+            key = 'up'
+
+        return super(ProjectList, self).keypress(size, key)
+
+    def loadProject(self, project_id):
+        urwid.emit_signal(self, 'loadproject', project_id)
+
 
 class TaskList(urwid.ListBox):
     def __init__(self, tasks):

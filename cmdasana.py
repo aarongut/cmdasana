@@ -72,8 +72,15 @@ class CmdAsana:
             'workspace': workspace_id,
             'completed_since': 'now'
         })
+
+    def allMyProjects(self):
+        return self.client.projects.find_by_workspace(self.workspace_id,
+                                                     page_size=None)
+
     def projectTasks(self, project_id):
-        return self.client.tasks.find_by_project(project_id)
+        return self.client.tasks.find_by_project(project_id, params={
+            'completed_since': 'now'
+        })
 
     def completeTask(self, task_id):
         self.client.tasks.update(task_id, completed=True)
@@ -98,7 +105,7 @@ class CmdAsana:
         self.frame.contents.append((widget, self.frame.options()))
         self.frame.focus_position = 0
 
-    def showWorkspace(self, workspace_id):
+    def showMyTasks(self, workspace_id):
         task_list = ui.TaskList(self.allMyTasks(workspace_id))
         self.connectTaskListSignals(task_list)
         self.replaceBody(task_list)
@@ -108,6 +115,12 @@ class CmdAsana:
         task_list = ui.TaskList(self.projectTasks(project_id))
         self.connectTaskListSignals(task_list)
         self.replaceBody(task_list)
+
+    def showProjectList(self, workspace_id):
+        self.workspace_id = workspace_id
+        project_list = ui.ProjectList(self.allMyProjects())
+        urwid.connect_signal(project_list, 'loadproject', self.showProject)
+        self.replaceBody(project_list)
 
     def loadDetails(self, task_id):
         task = self.client.tasks.find_by_id(task_id)
@@ -138,6 +151,8 @@ class CmdAsana:
 
         urwid.register_signal(ui.WorkspaceMenu, 'click')
 
+        urwid.register_signal(ui.ProjectList, 'loadproject')
+
     def clearSignals(self, widget):
         urwid.disconnect_signal(widget, 'complete', self.completeTask)
         urwid.disconnect_signal(widget, 'newtask', self.newTask)
@@ -159,13 +174,14 @@ class CmdAsana:
         self.registerSignals()
 
         workspace_menu = ui.WorkspaceMenu(self.myWorkspaces())
-        urwid.connect_signal(workspace_menu, 'click', self.showWorkspace)
+        urwid.connect_signal(workspace_menu, 'click', self.showProjectList)
 
         self.frame = urwid.Pile([
             ('pack', urwid.AttrMap(workspace_menu, 'workspace')),
             None
         ])
-        self.showWorkspace(self.myWorkspaces()[0]['id'])
+        #self.showWorkspace(self.myWorkspaces()[0]['id'])
+        self.showProjectList(self.myWorkspaces()[0]['id'])
 
         loop = urwid.MainLoop(self.frame,
                               unhandled_input=self.handleInput,
