@@ -103,12 +103,16 @@ class CmdAsana:
     def completeTask(self, task_id):
         self.client.tasks.update(task_id, completed=True)
 
-    def newTask(self): 
+    def newTask(self, task_after_id): 
         if self.state['view'] == 'project':
             task = self.client.tasks.create_in_workspace(
                 self.state['workspace_id'],
                 projects=[self.state['id']]
             )
+            if task_after_id != None:
+                self.client.tasks.add_project(task['id'],
+                                              project=self.state['id'],
+                                              insert_after=task_after_id)
         else:
             task = self.client.tasks.create_in_workspace(
                 self.state['workspace_id'],

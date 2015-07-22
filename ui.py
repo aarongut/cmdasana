@@ -112,8 +112,8 @@ class TaskList(urwid.ListBox):
         urwid.emit_signal(self, 'complete', task_id)
         del self.body[self.focus_position]
 
-    def newTask(self):
-        urwid.emit_signal(self, 'newtask')
+    def newTask(self, task_after_id=None):
+        urwid.emit_signal(self, 'newtask', task_after_id)
 
     def updateTask(self, task_id, name):
         urwid.emit_signal(self, 'updatetask', task_id, name)
@@ -166,7 +166,7 @@ class TaskEdit(urwid.Edit):
             elif key == 'tab':
                 urwid.emit_signal(self, 'complete', self.task['id'])
             elif key == 'enter':
-                urwid.emit_signal(self, 'newtask')
+                urwid.emit_signal(self, 'newtask', self.task['id'])
             elif key in ('l', 'right'):
                 urwid.emit_signal(self, 'details', self.task['id'])
             else:
