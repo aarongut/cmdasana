@@ -146,6 +146,8 @@ class CmdAsana:
         self.replaceBody(task_list)
 
     def showProject(self, project_id):
+        if project_id == None:
+            return self.showMyTasks(self.state['workspace_id'])
         self.state['view'] = 'project'
         self.state['id'] = project_id
 

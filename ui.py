@@ -61,7 +61,11 @@ class ProjectList(urwid.ListBox):
         project_widgets = [ProjectIcon(project, self.loadProject) 
                            for project in projects]
 
-        body = urwid.SimpleFocusListWalker(project_widgets)
+        body = urwid.SimpleFocusListWalker(
+            [ProjectIcon({'name': 'My Tasks', 'id': None},
+                         self.loadProject)] + \
+            project_widgets
+        )
 
         super(ProjectList, self).__init__(body)
 
