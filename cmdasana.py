@@ -6,6 +6,7 @@ import json
 
 import urwid
 import asana
+from asana.session import AsanaOAuth2Session
 from oauthlib.oauth2.rfc6749.errors import TokenExpiredError
 
 import ui
@@ -19,25 +20,36 @@ class CmdAsana:
             f.close()
             self.client = asana.Client.oauth(
                 client_id=CLIENT_ID,
-                token=token
+                client_secret=CLIENT_SECRET,
+                token=token,
+                token_updater=self.saveToken,
+                auto_refresh_url=AsanaOAuth2Session.token_url,
+                auto_refresh_kwargs={
+                    'client_id': CLIENT_ID,
+                    'client_secret': CLIENT_SECRET
+                },
             )
         except IOError:
             self.getToken()
 
-        try:
-            self.me = self.client.users.me()
-        except TokenExpiredError:
-            token = self.client.session.fetch_token(code=token['refresh_token'])
-            f = open('.oauth', 'w')
-            f.write(json.dumps(token))
-            f.close()
-            self.me = self.client.users.me()
+        self.me = self.client.users.me()
+
+    def saveToken(self, token):
+        f = open('.oauth', 'w')
+        f.write(json.dumps(token))
+        f.close()
 
     def getToken(self):
         self.client = asana.Client.oauth(
             client_id=CLIENT_ID,
             client_secret=CLIENT_SECRET,
-            redirect_uri='urn:ietf:wg:oauth:2.0:oob'
+            redirect_uri='urn:ietf:wg:oauth:2.0:oob',
+            token_updater=self.saveToken,
+            auto_refresh_url=AsanaOAuth2Session.token_url,
+            auto_refresh_kwargs={
+                'client_id': CLIENT_ID,
+                'client_secret': CLIENT_SECRET
+            },
         )
         (url, state) = self.client.session.authorization_url()
         try:
@@ -49,9 +61,7 @@ class CmdAsana:
 
         code = sys.stdin.readline().strip()
         token = self.client.session.fetch_token(code=code)
-        f = open('.oauth', 'w')
-        f.write(json.dumps(token))
-        f.close()
+        self.saveToken(token)
 
     def myWorkspaces(self):
         return self.me['workspaces']
@@ -62,6 +72,8 @@ class CmdAsana:
             'workspace': workspace_id,
             'completed_since': 'now'
         })
+    def projectTasks(self, project_id):
+        return self.client.tasks.find_by_project(project_id)
 
     def completeTask(self, task_id):
         self.client.tasks.update(task_id, completed=True)
@@ -91,6 +103,11 @@ class CmdAsana:
         self.connectTaskListSignals(task_list)
         self.replaceBody(task_list)
         self.workspace_id = workspace_id
+
+    def showProject(self, project_id):
+        task_list = ui.TaskList(self.projectTasks(project_id))
+        self.connectTaskListSignals(task_list)
+        self.replaceBody(task_list)
 
     def loadDetails(self, task_id):
         task = self.client.tasks.find_by_id(task_id)

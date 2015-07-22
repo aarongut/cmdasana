@@ -10,6 +10,7 @@ palette = [
     ('selected workspace', 'standout,bold', ''),
     ('header', 'bold,light green', ''),
     ('task', 'light green', ''),
+    ('section', 'white', 'dark green'),
     ('workspace', 'white', 'dark blue')
 ]
 
@@ -51,7 +52,8 @@ class TaskList(urwid.ListBox):
         body = urwid.SimpleFocusListWalker([])
         for task_widget,_ in task_widgets.contents:
             self.connectSignals(task_widget)
-            body.append(urwid.AttrMap(task_widget, 'task', focus_map='selected'))
+            style = 'section' if task_widget.task['name'][-1] == ':' else 'task'
+            body.append(urwid.AttrMap(task_widget, style, focus_map='selected'))
 
         super(TaskList, self).__init__(body)
 
@@ -59,8 +61,9 @@ class TaskList(urwid.ListBox):
         task_widget = TaskEdit(task, mode=EDIT)
         self.connectSignals(task_widget)
         index = self.focus_position + 1
+        style = 'section' if task['name'][-1] == ':' else 'task'
         self.body.insert(index,
-                         urwid.AttrMap(task_widget, None, focus_map='selected'))
+                         urwid.AttrMap(task_widget, style, focus_map='selected'))
         self.focus_position += 1
 
     def connectSignals(self, task_widget):
