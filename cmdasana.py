@@ -12,6 +12,9 @@ from oauthlib.oauth2.rfc6749.errors import TokenExpiredError
 import ui
 from secrets import CLIENT_ID, CLIENT_SECRET
 
+# id of the personal projects domain
+PERSONAL = 498346170860
+
 class CmdAsana:
     def __init__(self):
         try:
@@ -56,8 +59,8 @@ class CmdAsana:
             import webbrowser
             webbrowser.open(url)
         except Exception:
-            print "Go to the following link and enter the code:"
-            print url
+            print("Go to the following link and enter the code:")
+            print(url)
 
         code = sys.stdin.readline().strip()
         token = self.client.session.fetch_token(code=code)
@@ -92,8 +95,11 @@ class CmdAsana:
         })
 
     def allMyProjects(self):
-        return self.client.projects.find_by_workspace(self.workspace_id,
-                                                     page_size=None)
+        if self.workspace_id != PERSONAL:
+            return self.client.projects.find_by_workspace(self.workspace_id)
+        else:
+            return self.client.projects.find_by_workspace(self.workspace_id,
+                                                         page_size=None)
 
     def projectTasks(self, project_id):
         return self.client.tasks.find_by_project(project_id, params={

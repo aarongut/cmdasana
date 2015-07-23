@@ -12,7 +12,8 @@ palette = [
     ('header', 'bold,light green', ''),
     ('task', 'light green', ''),
     ('section', 'white', 'dark green'),
-    ('workspace', 'white', 'dark blue')
+    ('workspace', 'white', 'dark blue'),
+    ('pager', 'standout', ''),
 ]
 
 class WorkspaceMenu(urwid.Columns):
@@ -42,6 +43,11 @@ class WorkspaceButton(urwid.Button):
         super(WorkspaceButton, self).__init__(workspace['name'])
         urwid.connect_signal(self, 'click', onClick, workspace['id'])
 
+class PagerButton(urwid.Button):
+    def __init__(self, loadPage):
+        super(PagerButton, self).__init__(('pager', 'load more'))
+        urwid.connect_signal(self, 'click', loadPage)
+
 class ProjectIcon(urwid.SelectableIcon):
     def __init__(self, project, onClick):
         self.project = project
@@ -58,16 +64,24 @@ class ProjectList(urwid.ListBox):
     def __init__(self, projects):
         self.projects = projects
 
-        project_widgets = [ProjectIcon(project, self.loadProject) 
-                           for project in projects]
-
         body = urwid.SimpleFocusListWalker(
             [ProjectIcon({'name': 'My Tasks', 'id': None},
-                         self.loadProject)] + \
-            project_widgets
+                         self.loadProject),
+             None]
         )
-
         super(ProjectList, self).__init__(body)
+        self.loadPage()
+
+    def loadPage(self, opt=None):
+        self.body.pop()
+        for i in range(50):
+            try:
+                self.body.append(ProjectIcon(self.projects.next(),
+                                             self.loadProject))
+            except StopIteration:
+                return
+
+        self.body.append(PagerButton(self.loadPage))
 
     def keypress(self, size, key):
         if key == 'j':
