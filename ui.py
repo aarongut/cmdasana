@@ -220,7 +220,8 @@ class TaskDetails(urwid.Pile):
         body = projects + \
             [
                 ('pack', urwid.Divider('=')),
-                ('pack', urwid.Text(('header', task['name']))),
+                ('pack', urwid.Text(('header', task['name'] + \
+                                     " #" + str(task['id'])))),
                 ('pack', assignee),
                 ('pack', urwid.Divider('-')),
                 ('pack', urwid.Text(task['notes'])),
