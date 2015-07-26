@@ -3,6 +3,7 @@
 import os
 import sys
 import json
+from threading import Thread
 
 import urwid
 import asana
@@ -16,6 +17,8 @@ from secrets import CLIENT_ID, CLIENT_SECRET
 PERSONAL = 498346170860
 
 class CmdAsana:
+    loop = None
+
     def __init__(self):
         try:
             f = open(".oauth", "r")
@@ -110,33 +113,52 @@ class CmdAsana:
         self.client.tasks.update(task_id, completed=True)
 
     def newTask(self, task_after_id): 
-        if self.state['view'] == 'project':
-            task = self.client.tasks.create_in_workspace(
-                self.state['workspace_id'],
-                projects=[self.state['id']]
-            )
-            if task_after_id != None:
-                self.client.tasks.add_project(task['id'],
-                                              project=self.state['id'],
-                                              insert_after=task_after_id)
-        else:
-            task = self.client.tasks.create_in_workspace(
-                self.state['workspace_id'],
-                assignee=self.me['id']
-            )
+        def runInThread():
+            if self.state['view'] == 'project':
+                task = self.client.tasks.create_in_workspace(
+                    self.state['workspace_id'],
+                    projects=[self.state['id']]
+                )
+                if task_after_id != None:
+                    self.client.tasks.add_project(task['id'],
+                                                  project=self.state['id'],
+                                                  insert_after=task_after_id)
+            else:
+                task = self.client.tasks.create_in_workspace(
+                    self.state['workspace_id'],
+                    assignee=self.me['id']
+                )
 
-        task_list,_ = self.frame.contents[1]
-        task_list.insertNewTask(task)
+            update(task)
+
+        def update(task):
+            task_list,_ = self.frame.contents[1]
+            task_list.insertNewTask(task)
+
+        thread = Thread(target=runInThread)
+        thread.start()
 
     def updateTask(self, task_id, name):
-        self.client.tasks.update(task_id, name=name)
+        def runInThread():
+            self.client.tasks.update(task_id, name=name)
+        
+        thread = Thread(target=runInThread)
+        thread.start()
 
-    def updateDetails(self, task_id, details):
-        self.client.tasks.update(task_id, notes=details)
+    def updateDescription(self, task_id, description):
+        def runInThread():
+            self.client.tasks.update(task_id, notes=description)
+        
+        thread = Thread(target=runInThread)
+        thread.start()
     
     def addComment(self, task_id, comment):
-        self.client.stories.create_on_task(task_id, {"text": comment})
-        self.showDetails(task_id)
+        def runInThread():
+            self.client.stories.create_on_task(task_id, {"text": comment})
+            self.showDetails(task_id, show_loading=False)
+        
+        thread = Thread(target=runInThread)
+        thread.start()
 
     def replaceBody(self, widget):
         old_widget,_ = self.frame.contents.pop()
@@ -144,15 +166,31 @@ class CmdAsana:
             self.clearSignals(old_widget)
         self.frame.contents.append((widget, self.frame.options()))
         self.frame.focus_position = 0
+        if self.loop != None:
+            self.loop.draw_screen()
+
+    def showMainLoading(self):
+        text = urwid.Text(('loading', '[loading...]'))
+        self.replaceBody(urwid.Filler(text))
 
     def showMyTasks(self, workspace_id):
         self.state['view'] = 'atm'
         self.state['id'] = workspace_id
         self.state['workspace_id'] = workspace_id
 
-        task_list = ui.TaskList(self.allMyTasks(workspace_id))
-        self.connectTaskListSignals(task_list)
-        self.replaceBody(task_list)
+        self.showMainLoading()
+
+        def runInThread():
+            tasks = self.allMyTasks(workspace_id)
+            update(tasks)
+
+        def update(tasks):
+            task_list = ui.TaskList(tasks)
+            self.connectTaskListSignals(task_list)
+            self.replaceBody(task_list)
+
+        thread = Thread(target=runInThread)
+        thread.start()
 
     def showProject(self, project_id):
         if project_id == None:
@@ -160,29 +198,59 @@ class CmdAsana:
         self.state['view'] = 'project'
         self.state['id'] = project_id
 
-        task_list = ui.TaskList(self.projectTasks(project_id))
-        self.connectTaskListSignals(task_list)
-        self.replaceBody(task_list)
+        self.showMainLoading()
+
+        def runInThread():
+            tasks = self.projectTasks(project_id)
+            update(tasks)
+
+        def update(tasks):
+            task_list = ui.TaskList(tasks)
+            self.connectTaskListSignals(task_list)
+            self.replaceBody(task_list)
+
+        thread = Thread(target=runInThread)
+        thread.start()
 
     def showProjectList(self, workspace_id):
         self.state['view'] = 'workspace'
         self.state['id'] = workspace_id
         self.state['workspace_id'] = workspace_id
-
         self.workspace_id = workspace_id
-        project_list = ui.ProjectList(self.allMyProjects())
-        urwid.connect_signal(project_list, 'loadproject', self.showProject)
-        self.replaceBody(project_list)
 
-    def showDetails(self, task_id):
+        self.showMainLoading()
+
+        def runInThread():
+            projects = self.allMyProjects()
+            update(projects)
+
+        def update(projects):
+            project_list = ui.ProjectList(projects)
+            urwid.connect_signal(project_list, 'loadproject', self.showProject)
+            self.replaceBody(project_list)
+        
+        thread = Thread(target=runInThread)
+        thread.start()
+
+    def showDetails(self, task_id, show_loading=True):
         self.state['view'] = 'details'
         self.state['id'] = task_id
 
-        task = self.client.tasks.find_by_id(task_id)
-        stories = self.client.stories.find_by_task(task_id)
-        task_details = ui.TaskDetails(task, stories)
-        self.connectDetailsSignals(task_details)
-        self.replaceBody(task_details)
+        if show_loading:
+            self.showMainLoading()
+
+        def runInThread():
+            task = self.client.tasks.find_by_id(task_id)
+            stories = self.client.stories.find_by_task(task_id)
+            update(task, stories)
+
+        def update(task, stories):
+            task_details = ui.TaskDetails(task, stories)
+            self.connectDetailsSignals(task_details)
+            self.replaceBody(task_details)
+
+        thread = Thread(target=runInThread)
+        thread.start()
 
     def registerSignals(self):
         urwid.register_signal(ui.TaskList, [
@@ -220,6 +288,9 @@ class CmdAsana:
         urwid.disconnect_signal(widget, 'newtask', self.newTask)
         urwid.disconnect_signal(widget, 'updatetask', self.updateTask)
         urwid.disconnect_signal(widget, 'details', self.showDetails)
+        urwid.disconnect_signal(widget, 'updatedescription',
+                                self.updateDescription)
+        urwid.disconnect_signal(widget, 'updatetask', self.updateTask)
 
     def connectTaskListSignals(self, task_list):
         urwid.connect_signal(task_list, 'complete', self.completeTask)
@@ -230,7 +301,8 @@ class CmdAsana:
     def connectDetailsSignals(self, task_details):
         urwid.connect_signal(task_details, 'comment', self.addComment)
         urwid.connect_signal(task_details, 'loadproject', self.showProject)
-        urwid.connect_signal(task_details, 'updatedescription', self.updateDetails)
+        urwid.connect_signal(task_details, 'updatedescription',
+                             self.updateDescription)
         urwid.connect_signal(task_details, 'updatetask', self.updateTask)
 
     def handleInput(self, key):
@@ -259,11 +331,11 @@ class CmdAsana:
         else:
             raise KeyError
 
-        loop = urwid.MainLoop(self.frame,
+        self.loop = urwid.MainLoop(self.frame,
                               unhandled_input=self.handleInput,
                               palette=ui.palette
                              )
-        loop.run()
+        self.loop.run()
 
 def main():
     cmdasana = CmdAsana()
