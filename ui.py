@@ -10,6 +10,7 @@ palette = [
     ('selected', 'standout', ''),
     ('selected workspace', 'standout,bold', ''),
     ('header', 'bold,light green', ''),
+    ('secondary', 'light gray', ''),
     ('task', 'light green', ''),
     ('section', 'white', 'dark green'),
     ('workspace', 'white', 'dark blue'),
@@ -193,12 +194,39 @@ class TaskEdit(urwid.Edit):
 class CommentEdit(urwid.Edit):
     def __init__(self, task):
         self.task = task
-        super(CommentEdit, self).__init__('Add a comment:\n')
+        super(CommentEdit, self).__init__(('secondary', 'Add a comment:\n'))
 
     def keypress(self, size, key):
         if key != 'enter':
             return super(CommentEdit, self).keypress(size, key)
         urwid.emit_signal(self, 'comment', self.task['id'], self.edit_text)
+
+class TaskNameEdit(urwid.Edit):
+    def __init__(self, task):
+        self.task = task
+        super(TaskNameEdit, self).__init__(('secondary',
+                                            '#' + str(task['id']) + " "),
+                                           task['name'])
+
+    def keypress(self, size, key):
+        if key in ('enter', 'esc', 'up', 'down'):
+            if (self.edit_text != self.task['name']):
+                urwid.emit_signal(self, 'updatetask', self.task['id'],
+                                  self.edit_text)
+        return super(TaskNameEdit, self).keypress(size, key)
+
+class DescriptionEdit(urwid.Edit):
+    def __init__(self, task):
+        self.task = task
+        super(DescriptionEdit, self).__init__(('secondary', 'Description:\n'),
+                                              task['notes'],
+                                              multiline=True)
+
+    def keypress(self, size, key):
+        if key != 'esc':
+            return super(DescriptionEdit, self).keypress(size, key)
+        urwid.emit_signal(self, 'updatedescription', self.task['id'],
+                          self.edit_text)
 
 class TaskDetails(urwid.Pile):
     def __init__(self, task, stories):
@@ -208,23 +236,30 @@ class TaskDetails(urwid.Pile):
         comment_edit = CommentEdit(task)
         urwid.connect_signal(comment_edit, 'comment', self.comment)
 
+        description_edit = DescriptionEdit(task)
+        urwid.connect_signal(description_edit, 'updatedescription',
+                             self.updateDescription)
+        
+        task_name_edit = TaskNameEdit(task)
+        urwid.connect_signal(task_name_edit, 'updatetask', self.updateTask)
+
         projects = [('pack', ProjectIcon(project, self.loadProject))
                     for project in task['projects']]
 
         if task['assignee']:
             assignee = urwid.Text('Assigned to: ' + task['assignee']['name'])
         else:
-            assignee = urwid.Text('(not assigned)')
+            assignee = urwid.Text(('secondary', '(not assigned)'))
 
 
         body = projects + \
             [
                 ('pack', urwid.Divider('=')),
-                ('pack', urwid.Text(('header', task['name'] + \
-                                     " #" + str(task['id'])))),
+                ('pack', task_name_edit),
                 ('pack', assignee),
                 ('pack', urwid.Divider('-')),
-                ('pack', urwid.Text(task['notes'])),
+                ('pack', description_edit),
+                ('pack', urwid.Divider('-')),
             ] + \
             [('pack', urwid.Text('[' + story['created_by']['name'] + '] ' + \
                         story['text'])) for story in stories] + \
@@ -236,6 +271,12 @@ class TaskDetails(urwid.Pile):
 
     def comment(self, task_id, comment):
         urwid.emit_signal(self, 'comment', task_id, comment)
+
+    def updateDescription(self, task_id, description):
+        urwid.emit_signal(self, 'updatedescription', task_id, description)
+
+    def updateTask(self, task_id, name):
+        urwid.emit_signal(self, 'updatetask', task_id, name)
 
     def loadProject(self, project_id):
         urwid.emit_signal(self, 'loadproject', project_id)

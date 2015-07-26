@@ -130,6 +130,9 @@ class CmdAsana:
 
     def updateTask(self, task_id, name):
         self.client.tasks.update(task_id, name=name)
+
+    def updateDetails(self, task_id, details):
+        self.client.tasks.update(task_id, notes=details)
     
     def addComment(self, task_id, comment):
         self.client.stories.create_on_task(task_id, {"text": comment})
@@ -178,8 +181,7 @@ class CmdAsana:
         task = self.client.tasks.find_by_id(task_id)
         stories = self.client.stories.find_by_task(task_id)
         task_details = ui.TaskDetails(task, stories)
-        urwid.connect_signal(task_details, 'comment', self.addComment)
-        urwid.connect_signal(task_details, 'loadproject', self.showProject)
+        self.connectDetailsSignals(task_details)
         self.replaceBody(task_details)
 
     def registerSignals(self):
@@ -187,17 +189,27 @@ class CmdAsana:
             'complete',
             'newtask',
             'updatetask',
-            'details'
+            'details',
         ])
         urwid.register_signal(ui.TaskEdit, [
             'complete',
             'newtask',
             'updatetask',
-            'details'
+            'details',
         ])
 
-        urwid.register_signal(ui.TaskDetails, ['comment', 'loadproject'])
+        urwid.register_signal(ui.TaskDetails, [
+            'comment',
+            'loadproject',
+            'updatedescription',
+            'updatetask',
+        ])
+
         urwid.register_signal(ui.CommentEdit, ['comment'])
+
+        urwid.register_signal(ui.DescriptionEdit, ['updatedescription'])
+
+        urwid.register_signal(ui.TaskNameEdit, 'updatetask')
 
         urwid.register_signal(ui.WorkspaceMenu, 'click')
 
@@ -214,6 +226,12 @@ class CmdAsana:
         urwid.connect_signal(task_list, 'newtask', self.newTask)
         urwid.connect_signal(task_list, 'updatetask', self.updateTask)
         urwid.connect_signal(task_list, 'details', self.showDetails)
+
+    def connectDetailsSignals(self, task_details):
+        urwid.connect_signal(task_details, 'comment', self.addComment)
+        urwid.connect_signal(task_details, 'loadproject', self.showProject)
+        urwid.connect_signal(task_details, 'updatedescription', self.updateDetails)
+        urwid.connect_signal(task_details, 'updatetask', self.updateTask)
 
     def handleInput(self, key):
         if key in ('q', 'Q'):
