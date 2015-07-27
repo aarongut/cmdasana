@@ -236,8 +236,8 @@ class TaskDetails(urwid.Pile):
         comment_edit = CommentEdit(task)
         urwid.connect_signal(comment_edit, 'comment', self.comment)
 
-        description_edit = DescriptionEdit(task)
-        urwid.connect_signal(description_edit, 'updatedescription',
+        self.description_edit = DescriptionEdit(task)
+        urwid.connect_signal(self.description_edit, 'updatedescription',
                              self.updateDescription)
         
         task_name_edit = TaskNameEdit(task)
@@ -258,7 +258,7 @@ class TaskDetails(urwid.Pile):
                 ('pack', task_name_edit),
                 ('pack', assignee),
                 ('pack', urwid.Divider('-')),
-                ('pack', description_edit),
+                ('pack', self.description_edit),
                 ('pack', urwid.Divider('-')),
             ] + \
             [('pack', urwid.Text('[' + story['created_by']['name'] + '] ' + \
@@ -268,6 +268,16 @@ class TaskDetails(urwid.Pile):
             ]
 
         super(TaskDetails, self).__init__(body)
+
+    def keypress(self, size, key):
+        key = super(TaskDetails, self).keypress(size, key)
+
+        if self.focus != self.description_edit and \
+           self.description_edit.edit_text != self.task['notes']:
+            self.updateDescription(self.task['id'],
+                                   self.description_edit.edit_text)
+
+        return key
 
     def comment(self, task_id, comment):
         urwid.emit_signal(self, 'comment', task_id, comment)
