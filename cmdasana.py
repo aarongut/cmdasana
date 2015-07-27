@@ -176,6 +176,8 @@ class CmdAsana:
                                                          'count': 5
                                                      })
             callback(users)
+            self.loop.draw_screen()
+
         thread = Thread(target=runInThread)
         thread.start()
 
