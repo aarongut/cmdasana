@@ -49,6 +49,11 @@ class PagerButton(urwid.Button):
         super(PagerButton, self).__init__(('pager', 'load more'))
         urwid.connect_signal(self, 'click', loadPage)
 
+class TypeAheadButton(urwid.Button):
+    def __init__(self, item, onClick):
+        super(TypeAheadButton, self).__init__(item['name'])
+        urwid.connect_signal(self, 'click', onClick, item)
+
 class ProjectIcon(urwid.SelectableIcon):
     def __init__(self, project, onClick):
         self.project = project
@@ -194,7 +199,7 @@ class TaskEdit(urwid.Edit):
 class CommentEdit(urwid.Edit):
     def __init__(self, task):
         self.task = task
-        super(CommentEdit, self).__init__(('secondary', 'Add a comment:\n'))
+        super(CommentEdit, self).__init__(('secondary', u'Add a comment:\n'))
 
     def keypress(self, size, key):
         if key != 'enter':
@@ -205,7 +210,7 @@ class TaskNameEdit(urwid.Edit):
     def __init__(self, task):
         self.task = task
         super(TaskNameEdit, self).__init__(('secondary',
-                                            '#' + str(task['id']) + " "),
+                                            u'#' + str(task['id']) + ' '),
                                            task['name'])
 
     def keypress(self, size, key):
@@ -218,7 +223,7 @@ class TaskNameEdit(urwid.Edit):
 class DescriptionEdit(urwid.Edit):
     def __init__(self, task):
         self.task = task
-        super(DescriptionEdit, self).__init__(('secondary', 'Description:\n'),
+        super(DescriptionEdit, self).__init__(('secondary', u'Description:\n'),
                                               task['notes'],
                                               multiline=True)
 
@@ -227,6 +232,37 @@ class DescriptionEdit(urwid.Edit):
             return super(DescriptionEdit, self).keypress(size, key)
         urwid.emit_signal(self, 'updatedescription', self.task['id'],
                           self.edit_text)
+
+class AssigneeTypeAhead(urwid.Pile):
+    def __init__(self, task):
+        self.task = task
+
+        if task['assignee'] != None:
+            assignee = task['assignee']['name']
+        else:
+            assignee = ""
+
+        self.edit = urwid.Edit('Assignee: ', assignee)
+        urwid.connect_signal(self.edit, 'change', self.typeAhead)
+
+        body = [('pack', self.edit)]
+
+        super(AssigneeTypeAhead, self).__init__(body)
+
+    def typeAhead(self, widget, text):
+        urwid.emit_signal(self, 'usertypeahead', text, self.updateTypeAhead)
+
+    def updateTypeAhead(self, users):
+        users = [(TypeAheadButton(u, self.assign), ('pack', None)) for u in users]
+
+        users.insert(0, self.contents[0])
+
+        self.contents = users
+
+    def assign(self, widget, user):
+        urwid.emit_signal(self, 'assigntask', self.task['id'], user['id'])
+        self.contents = [self.contents[0]]
+        self.edit.set_edit_text(user['name'])
 
 class TaskDetails(urwid.Pile):
     def __init__(self, task, stories):
@@ -243,20 +279,19 @@ class TaskDetails(urwid.Pile):
         task_name_edit = TaskNameEdit(task)
         urwid.connect_signal(task_name_edit, 'updatetask', self.updateTask)
 
+        assignee_type_ahead = AssigneeTypeAhead(task)
+        urwid.connect_signal(assignee_type_ahead, 'usertypeahead',
+                             self.userTypeAhead)
+        urwid.connect_signal(assignee_type_ahead, 'assigntask', self.assignTask)
+
         projects = [('pack', ProjectIcon(project, self.loadProject))
                     for project in task['projects']]
-
-        if task['assignee']:
-            assignee = urwid.Text('Assigned to: ' + task['assignee']['name'])
-        else:
-            assignee = urwid.Text(('secondary', '(not assigned)'))
-
 
         body = projects + \
             [
                 ('pack', urwid.Divider('=')),
                 ('pack', task_name_edit),
-                ('pack', assignee),
+                ('pack', assignee_type_ahead),
                 ('pack', urwid.Divider('-')),
                 ('pack', self.description_edit),
                 ('pack', urwid.Divider('-')),
@@ -290,3 +325,9 @@ class TaskDetails(urwid.Pile):
 
     def loadProject(self, project_id):
         urwid.emit_signal(self, 'loadproject', project_id)
+
+    def userTypeAhead(self, text, callback):
+        urwid.emit_signal(self, 'usertypeahead', text, callback)
+
+    def assignTask(self, task_id, user_id):
+        urwid.emit_signal(self, 'assigntask', task_id, user_id)

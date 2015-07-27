@@ -151,12 +151,31 @@ class CmdAsana:
         
         thread = Thread(target=runInThread)
         thread.start()
+
+    def assignTask(self, task_id, user_id):
+        def runInThread():
+            self.client.tasks.update(task_id, assignee=user_id)
+
+        thread = Thread(target=runInThread)
+        thread.start()
     
     def addComment(self, task_id, comment):
         def runInThread():
             self.client.stories.create_on_task(task_id, {"text": comment})
             self.showDetails(task_id, show_loading=False)
         
+        thread = Thread(target=runInThread)
+        thread.start()
+
+    def userTypeAhead(self, text, callback):
+        def runInThread():
+            users = self.client.workspaces.typeahead(self.state['workspace_id'],
+                                                     {
+                                                         'type': 'user',
+                                                         'query': text,
+                                                         'count': 5
+                                                     })
+            callback(users)
         thread = Thread(target=runInThread)
         thread.start()
 
@@ -271,17 +290,21 @@ class CmdAsana:
             'loadproject',
             'updatedescription',
             'updatetask',
+            'usertypeahead',
+            'assigntask',
+        ])
+
+        urwid.register_signal(ui.AssigneeTypeAhead, [
+            'usertypeahead',
+            'assigntask',
         ])
 
         urwid.register_signal(ui.CommentEdit, ['comment'])
-
         urwid.register_signal(ui.DescriptionEdit, ['updatedescription'])
-
         urwid.register_signal(ui.TaskNameEdit, 'updatetask')
-
         urwid.register_signal(ui.WorkspaceMenu, 'click')
-
         urwid.register_signal(ui.ProjectList, 'loadproject')
+
 
     def clearSignals(self, widget):
         urwid.disconnect_signal(widget, 'complete', self.completeTask)
@@ -291,6 +314,7 @@ class CmdAsana:
         urwid.disconnect_signal(widget, 'updatedescription',
                                 self.updateDescription)
         urwid.disconnect_signal(widget, 'updatetask', self.updateTask)
+        urwid.disconnect_signal(widget, 'usertypeahead', self.userTypeAhead)
 
     def connectTaskListSignals(self, task_list):
         urwid.connect_signal(task_list, 'complete', self.completeTask)
@@ -304,6 +328,8 @@ class CmdAsana:
         urwid.connect_signal(task_details, 'updatedescription',
                              self.updateDescription)
         urwid.connect_signal(task_details, 'updatetask', self.updateTask)
+        urwid.connect_signal(task_details, 'usertypeahead', self.userTypeAhead)
+        urwid.connect_signal(task_details, 'assigntask', self.assignTask)
 
     def handleInput(self, key):
         if key in ('q', 'Q'):
