@@ -270,10 +270,11 @@ class CmdAsana:
         def runInThread():
             task = self.client.tasks.find_by_id(task_id)
             stories = self.client.stories.find_by_task(task_id)
-            update(task, stories)
+            subtasks = self.client.tasks.subtasks(task_id)
+            update(task, stories, subtasks)
 
-        def update(task, stories):
-            task_details = ui.TaskDetails(task, stories)
+        def update(task, stories, subtasks):
+            task_details = ui.TaskDetails(task, stories, subtasks)
             self.connectDetailsSignals(task_details)
             self.replaceBody(task_details)
 
@@ -301,6 +302,9 @@ class CmdAsana:
             'updatetask',
             'usertypeahead',
             'assigntask',
+            'complete',
+            'newtask',
+            'details',
         ])
 
         urwid.register_signal(ui.AssigneeTypeAhead, [
@@ -339,6 +343,9 @@ class CmdAsana:
         urwid.connect_signal(task_details, 'updatetask', self.updateTask)
         urwid.connect_signal(task_details, 'usertypeahead', self.userTypeAhead)
         urwid.connect_signal(task_details, 'assigntask', self.assignTask)
+        urwid.connect_signal(task_details, 'complete', self.completeTask)
+        urwid.connect_signal(task_details, 'newtask', self.newTask)
+        urwid.connect_signal(task_details, 'details', self.showDetails)
 
     def handleInput(self, key):
         if key in ('q', 'Q'):

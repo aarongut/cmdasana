@@ -265,7 +265,7 @@ class AssigneeTypeAhead(urwid.Pile):
         self.edit.set_edit_text(user['name'])
 
 class TaskDetails(urwid.ListBox):
-    def __init__(self, task, stories):
+    def __init__(self, task, stories, subtasks):
         self.task = task
         self.stories = stories
 
@@ -287,6 +287,19 @@ class TaskDetails(urwid.ListBox):
         projects = [ProjectIcon(project, self.loadProject)
                     for project in task['projects']]
 
+        if task['parent'] != None:
+            parent = TaskEdit(task['parent'])
+            urwid.connect_signal(parent, 'updatetask', self.updateSubtask)
+            urwid.connect_signal(parent, 'details', self.showDetails)
+            projects.append(parent)
+    
+        all_subtasks = [t for t in subtasks]
+        subtask_list = TaskList(all_subtasks)
+        urwid.connect_signal(subtask_list, 'complete', self.completeTask)
+        urwid.connect_signal(subtask_list, 'newtask', self.newTask)
+        urwid.connect_signal(subtask_list, 'updatetask', self.updateSubtask)
+        urwid.connect_signal(subtask_list, 'details', self.showDetails)
+
         body = projects + \
             [
                 urwid.Divider('='),
@@ -295,12 +308,27 @@ class TaskDetails(urwid.ListBox):
                 urwid.Divider('-'),
                 self.description_edit,
                 urwid.Divider('-'),
+                urwid.BoxAdapter(subtask_list, len(all_subtasks)),
+                urwid.Divider('-'),
             ] + \
             [urwid.Text('[' + story['created_by']['name'] + '] ' + \
                         story['text']) for story in stories] + \
             [comment_edit]
 
         super(TaskDetails, self).__init__(body)
+
+    def completeTask(self, task_id):
+        urwid.emit_signal(self, 'complete', task_id)
+        del self.body[self.focus_position]
+
+    def newTask(self, task_after_id=None):
+        urwid.emit_signal(self, 'newtask', task_after_id)
+
+    def updateSubtask(self, task_id, name):
+        urwid.emit_signal(self, 'updatetask', task_id, name)
+    
+    def showDetails(self, task_id):
+        urwid.emit_signal(self, 'details', task_id)
 
     def keypress(self, size, key):
         key = super(TaskDetails, self).keypress(size, key)
