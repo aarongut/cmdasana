@@ -135,6 +135,7 @@ class CmdAsana:
         def update(task):
             task_list,_ = self.frame.contents[1]
             task_list.insertNewTask(task)
+            self.loop.draw_screen()
 
         thread = Thread(target=runInThread)
         thread.start()
