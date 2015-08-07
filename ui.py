@@ -264,7 +264,7 @@ class AssigneeTypeAhead(urwid.Pile):
         self.contents = [self.contents[0]]
         self.edit.set_edit_text(user['name'])
 
-class TaskDetails(urwid.Pile):
+class TaskDetails(urwid.ListBox):
     def __init__(self, task, stories):
         self.task = task
         self.stories = stories
@@ -284,23 +284,21 @@ class TaskDetails(urwid.Pile):
                              self.userTypeAhead)
         urwid.connect_signal(assignee_type_ahead, 'assigntask', self.assignTask)
 
-        projects = [('pack', ProjectIcon(project, self.loadProject))
+        projects = [ProjectIcon(project, self.loadProject)
                     for project in task['projects']]
 
         body = projects + \
             [
-                ('pack', urwid.Divider('=')),
-                ('pack', task_name_edit),
-                ('pack', assignee_type_ahead),
-                ('pack', urwid.Divider('-')),
-                ('pack', self.description_edit),
-                ('pack', urwid.Divider('-')),
+                urwid.Divider('='),
+                task_name_edit,
+                assignee_type_ahead,
+                urwid.Divider('-'),
+                self.description_edit,
+                urwid.Divider('-'),
             ] + \
-            [('pack', urwid.Text('[' + story['created_by']['name'] + '] ' + \
-                        story['text'])) for story in stories] + \
-            [
-                ('weight', 1, urwid.Filler(comment_edit, 'bottom'))
-            ]
+            [urwid.Text('[' + story['created_by']['name'] + '] ' + \
+                        story['text']) for story in stories] + \
+            [comment_edit]
 
         super(TaskDetails, self).__init__(body)
 
