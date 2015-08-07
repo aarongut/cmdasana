@@ -171,12 +171,17 @@ class CmdAsana:
 
     def userTypeAhead(self, text, callback):
         def runInThread():
-            users = self.client.workspaces.typeahead(self.state['workspace_id'],
-                                                     {
-                                                         'type': 'user',
-                                                         'query': text,
-                                                         'count': 5
-                                                     })
+            if self.state['workspace_id'] != PERSONAL:
+                users = self.client.workspaces \
+                        .typeahead(self.state['workspace_id'],
+                                   {
+                                       'type': 'user',
+                                       'query': text,
+                                       'count': 5
+                                   })
+            else:
+                users = [self.me]
+
             callback(users)
             self.loop.draw_screen()
 
