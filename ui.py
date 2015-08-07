@@ -61,7 +61,7 @@ class ProjectIcon(urwid.SelectableIcon):
         super(ProjectIcon, self).__init__(project['name'])
 
     def keypress(self, size, key):
-        if key in ('enter', 'left', 'l'):
+        if key in ('enter', 'right', 'l'):
             self.onClick(self.project['id'])
         else:
             return super(ProjectIcon, self).keypress(size, key)
