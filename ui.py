@@ -112,7 +112,8 @@ class TaskList(urwid.ListBox):
         body = urwid.SimpleFocusListWalker([])
         for task_widget,_ in task_widgets.contents:
             self.connectSignals(task_widget)
-            style = 'section' if task_widget.task['name'][-1] == ':' else 'task'
+            style = 'section' if len(task_widget.task['name']) and \
+                    task_widget.task['name'][-1] == ':' else 'task'
             body.append(urwid.AttrMap(task_widget, style, focus_map='selected'))
 
         super(TaskList, self).__init__(body)
