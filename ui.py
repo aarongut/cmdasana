@@ -292,6 +292,9 @@ class TaskDetails(urwid.ListBox):
             parent = TaskEdit(task['parent'])
             urwid.connect_signal(parent, 'updatetask', self.updateSubtask)
             urwid.connect_signal(parent, 'details', self.showDetails)
+
+            #Remap enter to load details of parent
+            urwid.connect_signal(parent, 'newtask', self.showDetails)
             projects.append(parent)
     
         all_subtasks = [t for t in subtasks]
