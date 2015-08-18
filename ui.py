@@ -12,6 +12,7 @@ palette = [
     ('header', 'bold,light green', ''),
     ('secondary', 'light gray', ''),
     ('task', 'light green', ''),
+    ('project', 'yellow', ''),
     ('section', 'white', 'dark green'),
     ('workspace', 'white', 'dark blue'),
     ('pager', 'standout', ''),
@@ -71,8 +72,8 @@ class ProjectList(urwid.ListBox):
         self.projects = projects
 
         body = urwid.SimpleFocusListWalker(
-            [ProjectIcon({'name': 'My Tasks', 'id': None},
-                         self.loadProject),
+            [urwid.AttrMap(ProjectIcon({'name': 'My Tasks', 'id': None},
+                         self.loadProject), 'project'),
              None]
         )
         super(ProjectList, self).__init__(body)
@@ -82,8 +83,8 @@ class ProjectList(urwid.ListBox):
         self.body.pop()
         for i in range(50):
             try:
-                self.body.append(ProjectIcon(self.projects.next(),
-                                             self.loadProject))
+                self.body.append(urwid.AttrMap(ProjectIcon(self.projects.next(),
+                                             self.loadProject), 'project'))
             except StopIteration:
                 return
 
@@ -285,7 +286,8 @@ class TaskDetails(urwid.ListBox):
                              self.userTypeAhead)
         urwid.connect_signal(assignee_type_ahead, 'assigntask', self.assignTask)
 
-        projects = [ProjectIcon(project, self.loadProject)
+        projects = [urwid.AttrMap(ProjectIcon(project, self.loadProject),
+                                  'project')
                     for project in task['projects']]
 
         if task['parent'] != None:
