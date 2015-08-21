@@ -8,6 +8,7 @@ Requirments:
 
 Usage:
 ```
+make
 ./cmdasana.py
 ```
 
