@@ -1,74 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
+import json
 import os
 import sys
-import json
 from threading import Thread
 
 import urwid
 import asana
-from asana.session import AsanaOAuth2Session
-from oauthlib.oauth2.rfc6749.errors import TokenExpiredError
 
 import ui
-from secrets import CLIENT_ID, CLIENT_SECRET
-
-# id of the personal projects domain
-PERSONAL = 498346170860
+from auth import Auth
+from data import Data
 
 class CmdAsana:
     loop = None
 
     def __init__(self):
-        try:
-            f = open(".oauth", "r")
-            token = json.loads(f.readline())
-            f.close()
-            self.client = asana.Client.oauth(
-                client_id=CLIENT_ID,
-                client_secret=CLIENT_SECRET,
-                token=token,
-                token_updater=self.saveToken,
-                auto_refresh_url=AsanaOAuth2Session.token_url,
-                auto_refresh_kwargs={
-                    'client_id': CLIENT_ID,
-                    'client_secret': CLIENT_SECRET
-                },
-            )
-        except IOError:
-            self.getToken()
-
-        self.me = self.client.users.me()
-
-    def saveToken(self, token):
-        f = open('.oauth', 'w')
-        f.write(json.dumps(token))
-        f.close()
-
-    def getToken(self):
-        self.client = asana.Client.oauth(
-            client_id=CLIENT_ID,
-            client_secret=CLIENT_SECRET,
-            redirect_uri='urn:ietf:wg:oauth:2.0:oob',
-            token_updater=self.saveToken,
-            auto_refresh_url=AsanaOAuth2Session.token_url,
-            auto_refresh_kwargs={
-                'client_id': CLIENT_ID,
-                'client_secret': CLIENT_SECRET
-            },
-        )
-        (url, state) = self.client.session.authorization_url()
-        print("Go to the following link and enter the code:")
-        print(url)
-        try:
-            import webbrowser
-            webbrowser.open(url)
-        except Exception:
-            pass
-
-        code = sys.stdin.readline().strip()
-        token = self.client.session.fetch_token(code=code)
-        self.saveToken(token)
+        auth = Auth()
+        self.data = Data(auth.getClient())
 
     def saveState(self):
         f = open('.state', 'w')
@@ -88,44 +37,17 @@ class CmdAsana:
                 'workspace_id': workspace_id
             }
 
-    def myWorkspaces(self):
-        return self.me['workspaces']
 
-    def allMyTasks(self, workspace_id):
-        return self.client.tasks.find_all(params={
-            'assignee': self.me['id'],
-            'workspace': workspace_id,
-            'completed_since': 'now'
-        })
-
-    def allMyProjects(self):
-        if self.workspace_id != PERSONAL:
-            return self.client.projects.find_by_workspace(self.workspace_id)
-        else:
-            return self.client.projects.find_by_workspace(self.workspace_id,
-                                                         page_size=None)
-
-    def projectTasks(self, project_id):
-        return self.client.tasks.find_by_project(project_id, params={
-            'completed_since': 'now'
-        })
-
-    def completeTask(self, task_id):
-        self.client.tasks.update(task_id, completed=True)
-
-    def newTask(self, task_after_id): 
+    def newTask(self, task_after_id):
         def runInThread():
             if self.state['view'] == 'project':
-                task = self.client.tasks.create_in_workspace(
+                task = self.data.createTask(
                     self.state['workspace_id'],
-                    projects=[self.state['id']]
+                    opt_projects=[self.state['id']],
+                    opt_after=task_after_id
                 )
-                if task_after_id != None:
-                    self.client.tasks.add_project(task['id'],
-                                                  project=self.state['id'],
-                                                  insert_after=task_after_id)
             else:
-                task = self.client.tasks.create_in_workspace(
+                task = self.data.createTask(
                     self.state['workspace_id'],
                     assignee=self.me['id']
                 )
@@ -140,49 +62,29 @@ class CmdAsana:
         thread = Thread(target=runInThread)
         thread.start()
 
-    def updateTask(self, task_id, name):
+    def updateTask(self, task_id, opt_name=None, opt_projects=None,
+                   opt_assignee=None, opt_notes=None):
         def runInThread():
-            self.client.tasks.update(task_id, name=name)
-        
-        thread = Thread(target=runInThread)
-        thread.start()
-
-    def updateDescription(self, task_id, description):
-        def runInThread():
-            self.client.tasks.update(task_id, notes=description)
-        
-        thread = Thread(target=runInThread)
-        thread.start()
-
-    def assignTask(self, task_id, user_id):
-        def runInThread():
-            self.client.tasks.update(task_id, assignee=user_id)
+            self.data.updateTask(task_id,
+                                 opt_name=opt_name,
+                                 opt_projects=opt_projects,
+                                 opt_assignee=opt_assignee,
+                                 opt_notes=opt_notes)
 
         thread = Thread(target=runInThread)
         thread.start()
-    
+
     def addComment(self, task_id, comment):
         def runInThread():
-            self.client.stories.create_on_task(task_id, {"text": comment})
+            self.data.addComment(task_id, comment)
             self.showDetails(task_id, show_loading=False)
-        
+
         thread = Thread(target=runInThread)
         thread.start()
 
     def userTypeAhead(self, text, callback):
         def runInThread():
-            if self.state['workspace_id'] != PERSONAL:
-                users = self.client.workspaces \
-                        .typeahead(self.state['workspace_id'],
-                                   {
-                                       'type': 'user',
-                                       'query': text,
-                                       'count': 5
-                                   })
-            else:
-                users = [self.me]
-
-            callback(users)
+            callback(self.data.userTypeahead(self.state['workspace_id'], text))
             self.loop.draw_screen()
 
         thread = Thread(target=runInThread)
@@ -209,7 +111,7 @@ class CmdAsana:
         self.showMainLoading()
 
         def runInThread():
-            tasks = self.allMyTasks(workspace_id)
+            tasks = self.data.myTasks(workspace_id)
             update(tasks)
 
         def update(tasks):
@@ -229,7 +131,7 @@ class CmdAsana:
         self.showMainLoading()
 
         def runInThread():
-            tasks = self.projectTasks(project_id)
+            tasks = self.data.tasksInProject(project_id)
             update(tasks)
 
         def update(tasks):
@@ -249,14 +151,14 @@ class CmdAsana:
         self.showMainLoading()
 
         def runInThread():
-            projects = self.allMyProjects()
+            projects = self.data.allMyProjects()
             update(projects)
 
         def update(projects):
             project_list = ui.ProjectList(projects)
             urwid.connect_signal(project_list, 'loadproject', self.showProject)
             self.replaceBody(project_list)
-        
+
         thread = Thread(target=runInThread)
         thread.start()
 
@@ -268,9 +170,7 @@ class CmdAsana:
             self.showMainLoading()
 
         def runInThread():
-            task = self.client.tasks.find_by_id(task_id)
-            stories = self.client.stories.find_by_task(task_id)
-            subtasks = self.client.tasks.subtasks(task_id)
+            task, stories, subtasks = self.data.getTask(task_id)
             update(task, stories, subtasks)
 
         def update(task, stories, subtasks):
@@ -355,7 +255,7 @@ class CmdAsana:
         urwid.set_encoding("UTF-8")
         self.registerSignals()
 
-        workspace_menu = ui.WorkspaceMenu(self.myWorkspaces())
+        workspace_menu = ui.WorkspaceMenu(self.data.myWorkspaces())
         urwid.connect_signal(workspace_menu, 'click', self.showProjectList)
 
         self.frame = urwid.Pile([
