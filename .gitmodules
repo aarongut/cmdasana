@@ -1,3 +1,0 @@
-[submodule "python-asana"]
-	path = python-asana
-	url = git@github.com:Asana/python-asana.git

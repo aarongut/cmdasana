@@ -3,8 +3,8 @@
 
 tags
 
+venv
+
 .state
 .oauth
 secrets.py
-
-urwid-src
