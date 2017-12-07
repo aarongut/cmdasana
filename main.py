@@ -76,7 +76,7 @@ class CmdAsana(object):
             raise urwid.ExitMainLoop()
 
     def run(self):
-        print("Running...")
+        print("Running...", self.client.users.me())
 
     def save_token(self, token):
         f = open('.oauth', 'w')
