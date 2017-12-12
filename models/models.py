@@ -21,7 +21,7 @@ class User(AsanaObject):
 class Task(AsanaObject):
     def name(self):
         if self.object_dict['completed']:
-            return '✓ %s' % super(self).name()
+            return '✓ %s' % super(Task, self).name()
         return super(Task, self).name()
 
     def assignee(self):
@@ -59,6 +59,12 @@ class Task(AsanaObject):
         else:
             return []
 
+    def subtasks(self):
+        if 'subtasks' in self.object_dict:
+            return [Task(t) for t in self.object_dict['subtasks']]
+        else:
+            return []
+
     def custom_fields(self):
         if 'custom_fields' in self.object_dict:
             return [CustomField(c) for c in self.object_dict['custom_fields']]
@@ -74,20 +80,21 @@ class Project(AsanaObject):
 class CustomField(AsanaObject):
     def string_value(self):
         if 'text_value' in self.object_dict:
-            return self.object_dict['text_value']
+            return str(self.object_dict['text_value'])
         elif 'number_value' in self.object_dict:
-            return self.object_dict['number_value']
+            return str(self.object_dict['number_value'])
         elif 'enum_value' in self.object_dict and self.object_dict['enum_value']:
             enum_value = AsanaObject(self.object_dict['enum_value'])
-            return enum_value.name()
+            return str(enum_value.name())
 
         return ''
 
 class Story(AsanaObject):
-    def string_value(self):
+    def creator(self):
         if 'created_by' in self.object_dict:
-            creator = self.object_dict['created_by']['name'] + ' '
+            return  self.object_dict['created_by']['name'] + ' '
         else:
-            creator = ''
+            return ''
 
-        return '%s%s' % (creator, self.object_dict['text'])
+    def text(self):
+        return self.object_dict['text']

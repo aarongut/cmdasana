@@ -19,6 +19,8 @@ class AsanaService(object):
         'custom_fields.text_value',
         'custom_fields.number_value',
         'custom_fields.enum_value.name',
+        'subtasks.completed',
+        'subtasks.name',
     ]
 
     def __init__(self, client):

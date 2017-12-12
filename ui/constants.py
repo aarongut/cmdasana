@@ -1,14 +1,14 @@
 palette = [
-    ('selected', 'standout', ''),
-    ('selected workspace', 'standout,bold', ''),
+    ('atm_section', 'white,bold', 'dark blue'),
+    ('author', 'bold,dark blue', ''),
+    ('custom_fields', 'dark red', ''),
     ('header', 'bold,light green', ''),
-    ('secondary', 'light green', ''),
-    ('task', 'light green', ''),
     ('project', 'yellow', ''),
     ('section', 'dark green,bold', ''),
-    ('atm_section', 'white,bold', 'dark blue'),
+    ('selected', 'standout', ''),
+    ('task', 'light green', ''),
+    ('text', '', ''),
     ('workspace', 'white', 'dark blue'),
-    ('pager', 'standout', ''),
 ]
 
 keys = {

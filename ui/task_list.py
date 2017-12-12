@@ -53,7 +53,7 @@ class TaskRow(urwid.SelectableIcon):
     def __init__(self, task, on_click):
         self.on_click = on_click
         self.task = task
-        style = 'section' if task.name()[-1] == ':' else 'task'
+        style = 'section' if task.name() and task.name()[-1] == ':' else 'task'
         super(TaskRow, self).__init__((style, task.name()))
 
     def keypress(self, size, key):
