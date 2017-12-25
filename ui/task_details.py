@@ -38,10 +38,10 @@ class TaskDetails(object):
 
 class Memberships(object):
     def __init__(self, task, on_subtask_click, on_project_click):
-        components = [urwid.Button(
-            ('project', p.name()),
-            on_press = lambda x: on_project_click(p.id())
-        ) for p in task.projects()]
+        self.on_project_click = on_project_click
+
+        components = [self.membership(p.name(), p.id()) for p in task.projects()]
+
         if task.parent():
             components.append(urwid.Button(
                 ('task', 'Subtask of: %s' % task.parent().name()),
@@ -49,6 +49,11 @@ class Memberships(object):
             ))
 
         self.memberships = urwid.Pile(components)
+
+    def membership(self, name, id):
+        return urwid.Button(('project', name),
+                            on_press = lambda x: self.on_project_click(id)
+                           )
 
     def component(self):
         return self.memberships

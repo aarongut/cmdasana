@@ -84,7 +84,7 @@ class CmdAsana(object):
     def exit_handler(self, key):
         if key in ('q', 'Q', 'esc'):
             raise urwid.ExitMainLoop()
-        if key in ('backspace'):
+        if key == 'backspace':
             self.ui.go_back()
 
     def get_asana_service(self):
