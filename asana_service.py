@@ -63,6 +63,6 @@ class AsanaService(object):
         ))
     
     def get_stories(self, task_id):
-        return self.__wrap__(Story,
-                             self.client.stories.find_by_task(task_id)
-                            )
+        stories = self.client.stories.find_by_task(task_id)
+        filtered_stories = filter(lambda s: s['type'] == 'comment', stories)
+        return self.__wrap__(Story, filtered_stories)

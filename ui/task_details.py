@@ -26,10 +26,12 @@ class TaskDetails(object):
                 TaskRow(t, on_subtask_click) for t in task.subtasks()
             ]))
 
-        body = body + [
-            urwid.Divider('-'),
-            Stories(stories).component()
-        ]
+        stories = list(stories)
+        if (len(stories) > 0):
+            body = body + [
+                urwid.Divider('-'),
+                Stories(stories).component()
+            ]
 
         self.details = urwid.ListBox(urwid.SimpleFocusListWalker(body))
 
