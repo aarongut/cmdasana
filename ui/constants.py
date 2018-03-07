@@ -8,6 +8,10 @@ palette = [
     ('selected', 'standout', ''),
     ('task', 'light green', ''),
     ('text', '', ''),
+    ('strong', 'bold', ''),
+    ('underline', 'underline', ''),
+    ('link', 'underline,light blue', ''),
+    ('italic', 'italics', ''),
     ('workspace', 'white', 'dark blue'),
 ]
 

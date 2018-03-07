@@ -1,4 +1,5 @@
 import dateutil
+from html.parser import HTMLParser
 import sys
 
 class AsanaObject(object):
@@ -34,10 +35,15 @@ class Task(AsanaObject):
         return self.object_dict['assignee_status']
 
     def description(self):
-        if 'notes' in self.object_dict:
+        if 'html_notes' in self.object_dict:
+            parser = HTMLTextParser()
+            parser.feed(self.object_dict['html_notes'])
+            parser.close()
+            return parser.get_formatted_text()
+        elif 'notes' in self.object_dict:
             return self.object_dict['notes']
         else:
-            return None
+            return ""
 
     def due_date(self):
         if 'due_at' in self.object_dict:
@@ -89,6 +95,81 @@ class CustomField(AsanaObject):
 
         return ''
 
+class Strong(object):
+    def __init__(self, body):
+        self.body = body
+
+    def text_format(self):
+        return ('strong', self.body.text_format())
+
+class Italic(object):
+    def __init__(self, body):
+        self.body = body
+
+    def text_format(self):
+        return ('italic', self.body.text_format())
+
+class Underline(object):
+    def __init__(self, body):
+        self.body = body
+
+    def text_format(self):
+        return ('underline', self.body.text_format())
+
+class Link(object):
+    def __init__(self, body):
+        self.body = body
+
+    def text_format(self):
+        return ('link', self.body.text_format())
+
+class Tag(object):
+    def __init__(self, body):
+        self.body = body
+
+    def text_format(self):
+        return self.body.text_format()
+
+class Text(object):
+    def __init__(self, body):
+        self.body = body
+
+    def text_format(self):
+        return self.body
+
+class HTMLTextParser(HTMLParser):
+    def __init__(self):
+        self.text = []
+        self.tag_stack = []
+        super().__init__()
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'strong':
+            self.tag_stack.append(Strong)
+        elif tag == 'em':
+            self.tag_stack.append(Italic)
+        elif tag == 'u':
+            self.tag_stack.append(Underline)
+        elif tag == 'a':
+            self.tag_stack.append(Link)
+        else:
+            self.tag_stack.append(Tag)
+
+    def handle_data(self, data):
+        self.text.append(Text(data))
+
+    def handle_endtag(self, tag):
+        data = self.text.pop()
+        tag = self.tag_stack.pop()
+
+        self.text.append(tag(data))
+
+    def get_formatted_text(self):
+        formatted = [t.text_format() for t in self.text]
+        print(formatted, file=sys.stderr)
+        return formatted
+
+
 class Story(AsanaObject):
     def creator(self):
         if 'created_by' in self.object_dict:
@@ -97,4 +178,10 @@ class Story(AsanaObject):
             return ''
 
     def text(self):
-        return self.object_dict['text']
+        if 'html_text' in self.object_dict:
+            parser = HTMLTextParser()
+            parser.feed(self.object_dict['html_text'])
+            parser.close()
+            return parser.get_formatted_text()
+        else:
+            return [self.object_dict['text']]

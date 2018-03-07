@@ -39,9 +39,10 @@ class Ui(object):
     def task_list(self, id):
         self.nav_stack.append(('project', id))
         def runInThread():
+            project = self.asana_service.get_project(id)
             tasks = self.asana_service.get_tasks(id)
             self.update(TaskList(tasks,
-                                 'TODO: get project name',
+                                 project.name(),
                                  self.task_details
                                 ).component())
         thread = Thread(target=runInThread())
