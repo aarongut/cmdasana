@@ -38,7 +38,7 @@ class MyTasks(object):
                 ] + [TaskRow(t, self.callback) for t in self.today] + [
                     urwid.Text(('atm_section', 'Upcoming'))
                 ] + [TaskRow(t, self.callback) for t in self.upcoming] + [
-                    urwid.Text(('atm_section', 'Upcoming'))
+                    urwid.Text(('atm_section', 'Later'))
                 ] + [TaskRow(t, self.callback) for t in self.later]
                 )
             ),

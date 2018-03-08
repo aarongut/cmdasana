@@ -39,7 +39,11 @@ class Task(AsanaObject):
             parser = HTMLTextParser()
             parser.feed(self.object_dict['html_notes'])
             parser.close()
-            return parser.get_formatted_text()
+            text = parser.get_formatted_text()
+            if (len(text) > 0):
+                return text
+            else:
+                return ""
         elif 'notes' in self.object_dict:
             return self.object_dict['notes']
         else:
@@ -166,7 +170,6 @@ class HTMLTextParser(HTMLParser):
 
     def get_formatted_text(self):
         formatted = [t.text_format() for t in self.text]
-        print(formatted, file=sys.stderr)
         return formatted
 
 
