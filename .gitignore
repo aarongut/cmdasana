@@ -1,6 +1,8 @@
 *.swp
 *.pyc
 
+__pycache__
+
 tags
 
 venv
