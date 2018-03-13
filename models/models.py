@@ -134,6 +134,20 @@ class Tag(object):
     def text_format(self):
         return self.body.text_format()
 
+class List(object):
+    def __init__(self, body):
+        self.body = body
+
+    def text_format(self):
+        return self.body.text_format() + '\n'
+
+class ListItem(object):
+    def __init__(self, body):
+        self.body = body
+
+    def text_format(self):
+        return ' • ' + self.body.text_format() + '\n'
+
 class Text(object):
     def __init__(self, body):
         self.body = body
@@ -156,6 +170,10 @@ class HTMLTextParser(HTMLParser):
             self.tag_stack.append(Underline)
         elif tag == 'a':
             self.tag_stack.append(Link)
+        elif tag == 'ul' or tag == 'ol':
+            self.tag_stack.append(List)
+        elif tag == 'li':
+            self.tag_stack.append(ListItem)
         else:
             self.tag_stack.append(Tag)
 
