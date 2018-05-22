@@ -25,6 +25,7 @@ class AsanaService(object):
     ]
 
     STORY_FIELDS = [
+        'created_at',
         'created_by.name',
         'html_text',
         'text',

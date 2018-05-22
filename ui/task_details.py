@@ -75,7 +75,11 @@ class CustomFields(object):
 class Stories(object):
     def __init__(self, stories):
         components = [
-            urwid.Text([('author', s.creator())] + s.text())
+            urwid.Text([
+                ('timestamp', s.created_at().strftime('%Y-%m-%d %H:%M')),
+                ' ',
+                ('author', s.creator()),
+            ] + s.text())
         for s in stories]
 
         self.stories = urwid.Pile(components)

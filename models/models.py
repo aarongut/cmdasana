@@ -1,4 +1,4 @@
-import dateutil
+import dateutil.parser
 from html.parser import HTMLParser
 import sys
 
@@ -195,6 +195,12 @@ class Story(AsanaObject):
     def creator(self):
         if 'created_by' in self.object_dict:
             return  self.object_dict['created_by']['name'] + ' '
+        else:
+            return ''
+
+    def created_at(self):
+        if 'created_at' in self.object_dict:
+            return dateutil.parser.parse(self.object_dict['created_at'])
         else:
             return ''
 
