@@ -139,14 +139,15 @@ class List(object):
         self.body = body
 
     def text_format(self):
-        return self.body.text_format() + '\n'
+        return self.body.text_format()
 
 class ListItem(object):
-    def __init__(self, body):
+    def __init__(self, body, indent):
         self.body = body
+        self.indent = indent
 
     def text_format(self):
-        return ' • ' + self.body.text_format() + '\n'
+        return ('', [(' ' * self.indent), '• ', self.body.text_format(), '\n'])
 
 class Text(object):
     def __init__(self, body):
@@ -159,6 +160,7 @@ class HTMLTextParser(HTMLParser):
     def __init__(self):
         self.text = []
         self.tag_stack = []
+        self.indent = 0
         super().__init__()
 
     def handle_starttag(self, tag, attrs):
@@ -171,6 +173,7 @@ class HTMLTextParser(HTMLParser):
         elif tag == 'a':
             self.tag_stack.append(Link)
         elif tag == 'ul' or tag == 'ol':
+            self.indent += 2
             self.tag_stack.append(List)
         elif tag == 'li':
             self.tag_stack.append(ListItem)
@@ -182,9 +185,15 @@ class HTMLTextParser(HTMLParser):
 
     def handle_endtag(self, tag):
         data = self.text.pop()
-        tag = self.tag_stack.pop()
+        Class = self.tag_stack.pop()
 
-        self.text.append(tag(data))
+        if tag == 'ul' or tag =='ol':
+            self.indent -= 2
+
+        if tag == 'li':
+            self.text.append(Class(data, self.indent))
+        else:
+            self.text.append(Class(data))
 
     def get_formatted_text(self):
         formatted = [t.text_format() for t in self.text]
