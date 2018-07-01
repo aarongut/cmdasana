@@ -211,6 +211,12 @@ class Story(AsanaObject):
         else:
             return ''
 
+    def created_at(self):
+        if 'created_at' in self.object_dict:
+            return dateutil.parser.parse(self.object_dict['created_at'])
+        else:
+            return ''
+
     def text(self):
         if 'html_text' in self.object_dict:
             parser = HTMLTextParser()
