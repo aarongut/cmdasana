@@ -213,7 +213,8 @@ class Story(AsanaObject):
 
     def created_at(self):
         if 'created_at' in self.object_dict:
-            return dateutil.parser.parse(self.object_dict['created_at'])
+            return dateutil.parser.parse(self.object_dict['created_at']) \
+                    .replace(tzinfo=timezone.utc).astimezone(tz=None)
         else:
             return ''
 
