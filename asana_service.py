@@ -74,7 +74,7 @@ class AsanaService(object):
             Task,
             self.client.tasks.find_by_project(project_id, params=params)
         )
-    
+
     def get_stories(self, task_id):
         stories = self.client.stories.find_by_task(task_id, params = {
             'opt_fields': self.STORY_FIELDS

@@ -32,7 +32,7 @@ class Ui(object):
                                     stories,
                                     self.task_details,
                                     self.task_list,
-                                    None).component())
+                                    None, None, None).component())
         thread = Thread(target=runInThread())
         thread.start()
 

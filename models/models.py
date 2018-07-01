@@ -1,4 +1,5 @@
-import dateutil
+from datetime import timezone
+import dateutil.parser
 from html.parser import HTMLParser
 import sys
 
@@ -26,7 +27,7 @@ class Task(AsanaObject):
         return super(Task, self).name()
 
     def assignee(self):
-        if 'assignee' in self.object_dict:
+        if 'assignee' in self.object_dict and self.object_dict['assignee']:
             return User(self.object_dict['assignee'])
         else:
             return None
@@ -50,12 +51,15 @@ class Task(AsanaObject):
             return ""
 
     def due_date(self):
-        if 'due_at' in self.object_dict:
-            return dateutil.parser.parse(self.object_dict['due_at'])
-        elif 'due_one' in self.object_dict:
-            return dateutil.parser.parse(self.object_dict['due_on'])
+        if 'due_at' in self.object_dict and self.object_dict['due_at']:
+            datetime = dateutil.parser.parse(self.object_dict['due_at'])
+            datetime = datetime.replace(tzinfo=timezone.utc).astimezone(tz=None)
+            return datetime.strftime('%b %d, %Y %H:%M')
+        elif 'due_on' in self.object_dict and self.object_dict['due_on']:
+            date = dateutil.parser.parse(self.object_dict['due_on'])
+            return date.strftime('%b %d, %Y')
         else:
-            return None
+            return 'no due date'
 
     def parent(self):
         if 'parent' in self.object_dict and self.object_dict['parent']:

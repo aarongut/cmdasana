@@ -1,10 +1,11 @@
 import urwid
+from datetime import date, datetime
 
 from ui.task_list import TaskRow
 
 class TaskDetails(object):
     def __init__(self, task, stories, on_subtask_click, on_project_click,
-                 on_comment):
+                 on_comment, on_assignee_click, on_due_date_click):
         self.task = task
         self.on_subtask_click = on_subtask_click,
         self.on_project_click = on_project_click,
@@ -12,13 +13,15 @@ class TaskDetails(object):
 
         body = [
             urwid.Text(('task', task.name())),
-            urwid.Divider('-'),
+            urwid.Divider('⎼'),
             Memberships(task, on_subtask_click, on_project_click).component(),
-            urwid.Divider('-'),
+            urwid.Divider('⎼'),
+            Assignee(task, on_assignee_click).component(),
+            DueDate(task, on_due_date_click).component(),
             CustomFields(task).component(),
-            urwid.Divider('='),
+            urwid.Divider('⎼'),
             urwid.Text(task.description()),
-            urwid.Divider('-'),
+            urwid.Divider('⎼'),
         ]
 
         if task.subtasks():
@@ -37,6 +40,45 @@ class TaskDetails(object):
 
     def component(self):
             return self.details
+
+class Assignee(object):
+    def __init__(self, task, on_click):
+        if task.assignee():
+            assignee = task.assignee().name()
+        else:
+            assignee = "unassigned"
+
+
+        self.assignee = urwid.SelectableIcon([('strong', 'Assignee: '), ('', assignee)])
+
+        self.on_click = on_click
+        #urwid.connect_signal(self.assignee, 'keypress', self.on_keypress)
+
+    def component(self):
+        return self.assignee
+
+    def on_keypress(self, size, key):
+        if key == "enter":
+            self.on_click()
+        else:
+            return key
+
+class DueDate(object):
+    def __init__(self, task, on_click):
+        due_date = task.due_date()
+        self.due_date = urwid.SelectableIcon([('strong', 'Due: '), ('', str(task.due_date()))])
+
+        self.on_click = on_click
+        #urwid.connect_signal(self.due_date, 'keypress', self.on_keypress)
+
+    def component(self):
+        return self.due_date
+
+    def on_keypress(self, size, key):
+        if key == "enter":
+            self.on_click()
+        else:
+            return key
 
 class Memberships(object):
     def __init__(self, task, on_subtask_click, on_project_click):
