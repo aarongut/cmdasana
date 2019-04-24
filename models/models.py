@@ -188,7 +188,7 @@ class HTMLTextParser(HTMLParser):
         self.text.append(Text(data))
 
     def handle_endtag(self, tag):
-        data = self.text.pop()
+        data = self.text.pop() if len(self.text) > 0 else Text("")
         Class = self.tag_stack.pop()
 
         if tag == 'ul' or tag =='ol':
