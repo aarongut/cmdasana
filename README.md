@@ -5,7 +5,7 @@ A curses CLI for Asana, using the Asana API.
 * python 3
 * [python-asana](https://github.com/Asana/python-asana)
 * [urwid](http://urwid.org)
-* [pyhon-dateutil](https://github.com/dateutil/dateutil/)
+* [python-dateutil](https://github.com/dateutil/dateutil/)
 
 ## Setup
 ### Create an Asana OAuth app
